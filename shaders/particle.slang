@@ -31,16 +31,16 @@ float4 fragMain(PSInput input) : SV_TARGET {
     return float4(input.fragColor, 0.5 - length(coord));
 }
 
+struct UniformBuffer {
+    float deltaTime;
+};
+ConstantBuffer<UniformBuffer> ubo;
+
 struct Particle {
 	float2 position;
 	float2 velocity;
     float4 color;
 };
-
-struct UniformBuffer {
-    float deltaTime;
-};
-ConstantBuffer<UniformBuffer> ubo;
 
 struct ParticleSSBO {
     Particle particles;

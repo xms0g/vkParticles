@@ -16,23 +16,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/slangHelpers.cmake)
 
 file(GLOB_RECURSE SRC "src/*")
 
-set(LIBS_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/libs)
+add_executable(${PROJECT_NAME}  ${SRC})
 
-set(STB_IMAGE
-        ${CMAKE_CURRENT_SOURCE_DIR}/libs/image/stb_image.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/libs/image/stb_image.h)
-
-set(TINY_OBJ_LOADER
-        ${CMAKE_CURRENT_SOURCE_DIR}/libs/obj/tiny_obj_loader.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/libs/obj/tiny_obj_loader.h)
-
-set(COMPILATION_UNIT ${SRC} ${STB_IMAGE} ${TINY_OBJ_LOADER})
-
-add_executable(${PROJECT_NAME} ${COMPILATION_UNIT})
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-        ${LIBS_INCLUDE_DIRS}
-        ${GLM_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PUBLIC ${GLM_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan)
 

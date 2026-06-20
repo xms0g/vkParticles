@@ -1,7 +1,7 @@
 function (add_slang_shader_target TARGET)
     cmake_parse_arguments ("SHADER" "" "SOURCES" "OUTPUT_NAME" ${ARGN})
     set (SHADERS_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
-    set (ENTRY_POINTS -entry vertMain -entry fragMain)
+    set (ENTRY_POINTS -entry vertMain -entry fragMain -entry compMain)
 
     if (SHADER_OUTPUT_NAME)
         set (OUTPUT_FILE ${SHADERS_DIR}/${SHADER_OUTPUT_NAME})
