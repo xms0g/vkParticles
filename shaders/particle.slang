@@ -21,7 +21,6 @@ VSOutput vertMain(VSInput input) {
     output.pointSize = 14.0;
     output.pos = float4(input.inPosition, 1.0, 1.0);
     output.fragColor = input.inColor.rgb;
-    //output.pointCoord = (input.inPosition * float2(1.0, -1.0) + float2(1.0)) / 2.0;
     return output;
 }
 
