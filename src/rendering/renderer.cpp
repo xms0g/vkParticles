@@ -96,7 +96,7 @@ void Renderer::render(const float deltaTime) {
 			.pSignalSemaphores = &*mSemaphore
 		};
 
-		mComputeQueue.submit(computeSubmitInfo, nullptr);
+		mGraphicsComputeQueue.submit(computeSubmitInfo, nullptr);
 	}
 	{
 		// Record graphics command buffer
@@ -122,7 +122,7 @@ void Renderer::render(const float deltaTime) {
 			.pSignalSemaphores = &*mSemaphore
 		};
 
-		mComputeQueue.submit(graphicsSubmitInfo, nullptr);
+		mGraphicsComputeQueue.submit(graphicsSubmitInfo, nullptr);
 
 		// Present the image (wait for graphics to finish)
 		const vk::SemaphoreWaitInfo waitInfo{
@@ -145,7 +145,7 @@ void Renderer::render(const float deltaTime) {
 			.pImageIndices = &imageIndex
 		};
 
-		result = mComputeQueue.presentKHR(presentInfo);
+		result = mGraphicsComputeQueue.presentKHR(presentInfo);
 		// Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
 		// here and does not need to be caught by an exception.
 		if ((result == vk::Result::eSuboptimalKHR) ||
@@ -298,7 +298,7 @@ void Renderer::createLogicalDevice() {
 	};
 
 	mDevice = vk::raii::Device(mPhysicalDevice, deviceCreateInfo);
-	mComputeQueue = vk::raii::Queue(mDevice, mGraphicsAndComputeIndex, 0);
+	mGraphicsComputeQueue = vk::raii::Queue(mDevice, mGraphicsAndComputeIndex, 0);
 }
 
 void Renderer::createSwapchain() {
@@ -543,20 +543,20 @@ void Renderer::createShaderStorageBuffers() {
 
 	// Copy initial particle data to all storage buffers
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		vk::raii::Buffer shaderStorageBufferTemp({});
-		vk::raii::DeviceMemory shaderStorageBufferTempMemory({});
+		vk::raii::Buffer shaderStorageBuffer({});
+		vk::raii::DeviceMemory shaderStorageBufferTemp({});
 
 		createBuffer(
 			bufferSize,
 			vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
 			vk::MemoryPropertyFlagBits::eDeviceLocal,
-			shaderStorageBufferTemp,
-			shaderStorageBufferTempMemory);
+			shaderStorageBuffer,
+			shaderStorageBufferTemp);
 
-		copyBuffer(stagingBuffer, shaderStorageBufferTemp, bufferSize);
+		copyBuffer(stagingBuffer, shaderStorageBuffer, bufferSize);
 
-		mShaderStorageBuffers.emplace_back(std::move(shaderStorageBufferTemp));
-		mShaderStorageBuffersMemory.emplace_back(std::move(shaderStorageBufferTempMemory));
+		mShaderStorageBuffers.emplace_back(std::move(shaderStorageBuffer));
+		mShaderStorageBuffersMemory.emplace_back(std::move(shaderStorageBufferTemp));
 	}
 }
 
@@ -595,7 +595,7 @@ void Renderer::createComputeDescriptorSets() {
 		};
 
 		vk::DescriptorBufferInfo storageBufferInfoLastFrame{
-			.buffer = mShaderStorageBuffers[(i - 1) % MAX_FRAMES_IN_FLIGHT],
+			.buffer = mShaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT],
 			.offset = 0,
 			.range = sizeof(Particle) * PARTICLE_COUNT
 		};
@@ -616,13 +616,13 @@ void Renderer::createComputeDescriptorSets() {
 				.pTexelBufferView = nullptr
 			},
 			vk::WriteDescriptorSet{
-				.dstSet = *mComputeDescriptorSets[i], .
-				dstBinding = 1,
+				.dstSet = *mComputeDescriptorSets[i],
+				.dstBinding = 1,
 				.dstArrayElement = 0,
 				.descriptorCount = 1,
 				.descriptorType = vk::DescriptorType::eStorageBuffer,
-				.pImageInfo = nullptr, .
-				pBufferInfo = &storageBufferInfoLastFrame,
+				.pImageInfo = nullptr,
+				.pBufferInfo = &storageBufferInfoLastFrame,
 				.pTexelBufferView = nullptr
 			},
 			vk::WriteDescriptorSet{
@@ -679,7 +679,7 @@ void Renderer::createCommandBuffers() {
 	mCommandBuffers.clear();
 
 	const vk::CommandBufferAllocateInfo allocInfo{
-		.commandPool = mCommandPool,
+		.commandPool = *mCommandPool,
 		.level = vk::CommandBufferLevel::ePrimary,
 		.commandBufferCount = MAX_FRAMES_IN_FLIGHT
 	};
@@ -690,10 +690,12 @@ void Renderer::createCommandBuffers() {
 void Renderer::createComputeCommandBuffers() {
 	mComputeCommandBuffers.clear();
 
-	vk::CommandBufferAllocateInfo allocInfo{};
-	allocInfo.commandPool = *mCommandPool;
-	allocInfo.level = vk::CommandBufferLevel::ePrimary;
-	allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
+	vk::CommandBufferAllocateInfo allocInfo{
+		.commandPool = *mCommandPool,
+		 .level = vk::CommandBufferLevel::ePrimary,
+		 .commandBufferCount = MAX_FRAMES_IN_FLIGHT
+
+	};
 
 	mComputeCommandBuffers = vk::raii::CommandBuffers(mDevice, allocInfo);
 }
@@ -1004,6 +1006,6 @@ void Renderer::endSingleTimeCommands(const vk::raii::CommandBuffer& commandBuffe
 
 	const vk::SubmitInfo submitInfo{.commandBufferCount = 1, .pCommandBuffers = &*commandBuffer};
 
-	mComputeQueue.submit(submitInfo, nullptr);
-	mComputeQueue.waitIdle();
+	mGraphicsComputeQueue.submit(submitInfo, nullptr);
+	mGraphicsComputeQueue.waitIdle();
 }

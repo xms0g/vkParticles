@@ -118,7 +118,7 @@ private:
 	vk::raii::Instance mInstance{nullptr};
 	vk::raii::PhysicalDevice mPhysicalDevice{nullptr};
 	vk::raii::Device mDevice{nullptr};
-	vk::raii::Queue mComputeQueue{nullptr};
+	vk::raii::Queue mGraphicsComputeQueue{nullptr};
 	uint32_t mGraphicsAndComputeIndex{static_cast<uint32_t>(~0)};
 	vk::raii::SurfaceKHR mSurface{nullptr};
 	vk::raii::SwapchainKHR mSwapChain{nullptr};
