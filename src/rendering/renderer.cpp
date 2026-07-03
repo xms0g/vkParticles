@@ -958,7 +958,7 @@ void Renderer::transitionImageLayout(
 	const vk::AccessFlags2 dstAccessMask,
 	const vk::PipelineStageFlags2 srcStageMask,
 	const vk::PipelineStageFlags2 dstStageMask,
-	const vk::raii::CommandBuffer& commandBuffer) const {
+	const vk::raii::CommandBuffer& commandBuffer) {
 	vk::ImageMemoryBarrier2 barrier = {
 		.srcStageMask = srcStageMask,
 		.srcAccessMask = srcAccessMask,

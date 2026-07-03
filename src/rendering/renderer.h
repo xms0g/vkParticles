@@ -69,7 +69,7 @@ private:
 	void getPhysicalDevice();
 
 	// Support Functions
-	std::vector<const char*> getRequiredInstanceExtensions();
+	static std::vector<const char*> getRequiredInstanceExtensions();
 
 	static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
 		vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -97,7 +97,7 @@ private:
 	[[nodiscard]]
 	vk::raii::ShaderModule createShaderModule(const std::vector<char>& code) const;
 
-	void transitionImageLayout(
+	static void transitionImageLayout(
 		vk::Image image,
 		vk::ImageLayout oldLayout,
 		vk::ImageLayout newLayout,
@@ -105,7 +105,7 @@ private:
 		vk::AccessFlags2 dstAccessMask,
 		vk::PipelineStageFlags2 srcStageMask,
 		vk::PipelineStageFlags2 dstStageMask,
-		const vk::raii::CommandBuffer& commandBuffer) const;
+		const vk::raii::CommandBuffer& commandBuffer) ;
 
 	[[nodiscard]]
 	vk::raii::CommandBuffer beginSingleTimeCommands() const;
