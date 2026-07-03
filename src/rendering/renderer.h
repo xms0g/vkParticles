@@ -30,8 +30,6 @@ private:
 
 	void createSwapchainImageViews();
 
-	void createColorResources();
-
 	void recreateSwapchain();
 
 	void createGraphicsPipeline();
@@ -49,8 +47,6 @@ private:
 	void createComputeDescriptorSets();
 
 	void createComputeDescriptorSetLayout();
-
-	void createDepthResources();
 
 	void createBuffer(
 		vk::DeviceSize size,
@@ -94,54 +90,12 @@ private:
 	[[nodiscard]]
 	uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
 
-	[[nodiscard]]
-	vk::Format findDepthFormat() const;
-
-	[[nodiscard]]
-	vk::Format findSupportedFormat(
-		const std::vector<vk::Format>& candidates,
-		vk::ImageTiling tiling,
-		vk::FormatFeatureFlags features) const;
-
-	bool hasStencilComponent(vk::Format format);
-
 	void copyBuffer(const vk::raii::Buffer& srcBuffer, const vk::raii::Buffer& dstBuffer, vk::DeviceSize size) const;
-
-	void copyBufferToImage(const vk::raii::Buffer& buffer, const vk::raii::Image& image, uint32_t width,
-	                       uint32_t height) const;
 
 	void updateUniformBuffer(uint32_t currentImage, float deltaTime) const;
 
 	[[nodiscard]]
 	vk::raii::ShaderModule createShaderModule(const std::vector<char>& code) const;
-
-	void createImage(
-		uint32_t width,
-		uint32_t height,
-		uint32_t mipLevels,
-		vk::SampleCountFlagBits numSamples,
-		vk::Format format,
-		vk::ImageTiling tiling,
-		vk::ImageUsageFlags usage,
-		vk::MemoryPropertyFlags properties,
-		vk::raii::Image& image,
-		vk::raii::DeviceMemory& imageMemory) const;
-
-	[[nodiscard]]
-	vk::raii::ImageView createImageView(
-		const vk::raii::Image& image,
-		vk::Format format,
-		vk::ImageAspectFlags aspectFlags,
-		uint32_t mipLevels) const;
-
-	void createTextureSampler();
-
-	void generateMipmaps(
-		const vk::raii::Image &image,
-		vk::Format imageFormat,
-		int32_t texWidth,
-		int32_t texHeight,
-		uint32_t mipLevels) const;
 
 	void transitionImageLayout(
 		vk::Image image,
@@ -154,9 +108,6 @@ private:
 		const vk::raii::CommandBuffer& commandBuffer) const;
 
 	[[nodiscard]]
-	vk::SampleCountFlagBits getMaxUsableSampleCount() const;
-
-	[[nodiscard]]
 	vk::raii::CommandBuffer beginSingleTimeCommands() const;
 
 	void endSingleTimeCommands(const vk::raii::CommandBuffer& commandBuffer) const;
@@ -167,8 +118,8 @@ private:
 	vk::raii::Instance mInstance{nullptr};
 	vk::raii::PhysicalDevice mPhysicalDevice{nullptr};
 	vk::raii::Device mDevice{nullptr};
-	vk::raii::Queue mGraphicsQueue{nullptr};
-	uint32_t mGraphicsQueueFamilyIndex{static_cast<uint32_t>(~0)};
+	vk::raii::Queue mComputeQueue{nullptr};
+	uint32_t mGraphicsAndComputeIndex{static_cast<uint32_t>(~0)};
 	vk::raii::SurfaceKHR mSurface{nullptr};
 	vk::raii::SwapchainKHR mSwapChain{nullptr};
 	vk::SurfaceFormatKHR mSwapChainSurfaceFormat;
@@ -182,10 +133,6 @@ private:
 	vk::raii::PipelineLayout mComputePipelineLayout{nullptr};
 	vk::raii::Pipeline mGraphicsPipeline{nullptr};
 	vk::raii::Pipeline mComputePipeline{nullptr};
-	vk::raii::Buffer mVertexBuffer{nullptr};
-	vk::raii::DeviceMemory mVertexBufferMemory{nullptr};
-	vk::raii::Buffer mIndexBuffer{nullptr};
-	vk::raii::DeviceMemory mIndexBufferMemory{nullptr};
 	std::vector<vk::raii::Buffer> mUniformBuffers;
 	std::vector<vk::raii::DeviceMemory> mUniformBuffersMemory;
 	std::vector<vk::raii::Buffer> mShaderStorageBuffers;
@@ -198,16 +145,5 @@ private:
 	uint64_t mTimelineValue{0};
 	std::vector<vk::raii::Fence> mFences;
 	uint32_t mFrameIndex{0};
-	vk::raii::Image mTextureImage{nullptr};
-	vk::raii::DeviceMemory mTextureImageMemory{nullptr};
-	vk::raii::ImageView mTextureImageView{nullptr};
-	vk::raii::Sampler mTextureSampler{nullptr};
-	vk::raii::Image mDepthImage{nullptr};
-	vk::raii::DeviceMemory mDepthImageMemory{nullptr};
-	vk::raii::ImageView mDepthImageView{nullptr};
-	vk::SampleCountFlagBits mMSAASamples;
-	vk::raii::Image mColorImage{nullptr};
-	vk::raii::DeviceMemory mColorImageMemory{nullptr};
-	vk::raii::ImageView mColorImageView{nullptr};
 	vk::raii::DebugUtilsMessengerEXT mDebugMessenger{nullptr};
 };

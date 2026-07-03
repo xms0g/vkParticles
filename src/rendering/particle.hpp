@@ -33,7 +33,7 @@ struct Particle {
 			const float x = r * cosf(theta) * HEIGHT / WIDTH;
 			const float y = r * sinf(theta);
 			position = glm::vec2(x, y);
-			velocity = normalize(glm::vec2(x, y)) * 0.00025f;
+			velocity = normalize(glm::vec2(x, y)) * 0.5f;
 			color = glm::vec4(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine), 1.0f);
 		}
 

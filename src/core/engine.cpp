@@ -7,7 +7,7 @@ Engine::Engine()
 	: mRenderer(std::make_unique<Renderer>()),
 	  mWindow(std::make_unique<Window>()) {
 	try {
-		mWindow->init("Vulkan", WIDTH, HEIGHT);
+		mWindow->init("Vulkan Particle", WIDTH, HEIGHT);
 		mRenderer->init(mWindow.get());
 	} catch (const std::runtime_error& e) {
 		throw std::runtime_error(e.what());
