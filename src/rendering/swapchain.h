@@ -17,6 +17,8 @@ public:
 
 	vk::Extent2D& extent();
 
+	uint32_t acquireNextImage(const vk::raii::Fence& fence) const;
+
 	void create(
 		const vk::raii::SurfaceKHR& surface,
 		const vk::raii::Device& device,

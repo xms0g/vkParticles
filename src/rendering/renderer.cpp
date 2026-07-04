@@ -53,7 +53,7 @@ int Renderer::init(Window* window) {
 }
 
 void Renderer::render(const float deltaTime) {
-	auto [result, imageIndex] = mSwapChain.native().acquireNextImage(UINT64_MAX, nullptr, *mFences[mFrameIndex]);
+	uint32_t imageIndex = mSwapChain.acquireNextImage(mFences[mFrameIndex]);
 
 	auto fenceResult = mDevice.waitForFences(*mFences[mFrameIndex], vk::True, UINT64_MAX);
 	if (fenceResult != vk::Result::eSuccess) {
@@ -402,7 +402,7 @@ void Renderer::createGraphicsPipeline() {
 }
 
 void Renderer::createComputePipeline() {
-	const auto shaderPath = std::filesystem::path(SHADER_BINARY_DIR) / SHADER_NAME;
+	const auto shaderPath = fs::path(SHADER_BINARY_DIR) + SHADER_NAME;
 	const auto shaderCode = fs::readFile(shaderPath);
 	const auto shaderModule = createShaderModule(shaderCode);
 
