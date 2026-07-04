@@ -88,6 +88,10 @@ private:
 
 	void endSingleTimeCommands(const vk::raii::CommandBuffer& commandBuffer) const;
 
+	struct UniformBufferObject {
+		float deltaTime{1.0f};
+	};
+
 	Window* mWindow{nullptr};
 
 	vk::raii::Context mContext;

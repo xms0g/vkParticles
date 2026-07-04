@@ -22,10 +22,6 @@
 #include "../config/config.hpp"
 #include "../io/filesystem.h"
 
-struct UniformBufferObject {
-	float deltaTime = 1.0f;
-};
-
 Renderer::Renderer() = default;
 
 Renderer::~Renderer() = default;
@@ -483,7 +479,7 @@ void Renderer::createShaderStorageBuffers() {
 			vk::MemoryPropertyFlagBits::eDeviceLocal
 		};
 
-		copyBuffer(ssbo,stagingBuffer, bufferSize);
+		copyBuffer(ssbo, stagingBuffer, bufferSize);
 
 		mShaderStorageBuffers.emplace_back(std::move(ssbo));
 	}
@@ -520,7 +516,7 @@ void Renderer::createComputeDescriptorSets() {
 		vk::DescriptorBufferInfo bufferInfo{
 			.buffer = mUniformBuffers[i].getBuffer(),
 			.offset = 0,
-			.range = sizeof(UniformBufferObject)
+			.range = mUniformBuffers[i].getSize()
 		};
 
 		vk::DescriptorBufferInfo storageBufferInfoLastFrame{
@@ -603,7 +599,7 @@ void Renderer::createCommandBuffers() {
 }
 
 void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
-	auto& commandBuffer = mGraphicsCommandBuffers[mFrameIndex];
+	const auto& commandBuffer = mGraphicsCommandBuffers[mFrameIndex];
 	commandBuffer.reset();
 	commandBuffer.begin({});
 
@@ -638,8 +634,15 @@ void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 
 	commandBuffer.beginRendering(renderingInfo);
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *mGraphicsPipeline);
-	commandBuffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(mSwapChain.extent().width),
-	                                          static_cast<float>(mSwapChain.extent().height), 0.0f, 1.0f));
+	commandBuffer.setViewport(
+		0,
+		vk::Viewport(
+			0.0f,
+			0.0f,
+			static_cast<float>(mSwapChain.extent().width),
+			static_cast<float>(mSwapChain.extent().height),
+			0.0f,
+			1.0f));
 	commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), mSwapChain.extent()));
 	commandBuffer.bindVertexBuffers(0, {mShaderStorageBuffers[mFrameIndex].getBuffer()}, {0});
 	commandBuffer.draw(PARTICLE_COUNT, 1, 0, 0);

@@ -6,7 +6,8 @@ Buffer::Buffer(
 	const vk::raii::Device& device,
 	const vk::raii::PhysicalDevice& phyDev,
 	const vk::BufferUsageFlags usage,
-	const vk::MemoryPropertyFlags properties) {
+	const vk::MemoryPropertyFlags properties)
+	: mSize(size) {
 	const vk::BufferCreateInfo bufferInfo{
 		.size = size, .usage = usage, .sharingMode = vk::SharingMode::eExclusive
 	};
@@ -25,6 +26,10 @@ Buffer::Buffer(
 
 vk::Buffer Buffer::getBuffer() const {
 	return mBuffer;
+}
+
+vk::DeviceSize Buffer::getSize() const {
+	return mSize;
 }
 
 void* Buffer::getMapped() const {

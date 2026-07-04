@@ -14,6 +14,8 @@ public:
 	[[nodiscard]]
 	vk::Buffer getBuffer() const;
 
+	vk::DeviceSize getSize() const;
+
 	[[nodiscard]]
 	void* getMapped() const;
 
@@ -23,6 +25,7 @@ public:
 	void unmap() const;
 
 private:
+	vk::DeviceSize mSize;
 	vk::raii::Buffer mBuffer{nullptr};
 	vk::raii::DeviceMemory mBufferMemory{nullptr};
 	void* mMappedMemory{nullptr};
