@@ -129,7 +129,7 @@ private:
 	vk::raii::DescriptorSetLayout mComputeDescriptorSetLayout{nullptr};
 	vk::raii::DescriptorPool mDescriptorPool{nullptr};
 	std::vector<vk::raii::DescriptorSet> mComputeDescriptorSets;
-	vk::raii::PipelineLayout mPipelineLayout{nullptr};
+	vk::raii::PipelineLayout mGraphicsPipelineLayout{nullptr};
 	vk::raii::PipelineLayout mComputePipelineLayout{nullptr};
 	vk::raii::Pipeline mGraphicsPipeline{nullptr};
 	vk::raii::Pipeline mComputePipeline{nullptr};
@@ -139,7 +139,7 @@ private:
 	std::vector<vk::raii::DeviceMemory> mShaderStorageBuffersMemory;
 	std::vector<void*> mUniformBuffersMapped;
 	vk::raii::CommandPool mCommandPool{nullptr};
-	std::vector<vk::raii::CommandBuffer> mCommandBuffers;
+	std::vector<vk::raii::CommandBuffer> mGraphicsCommandBuffers;
 	std::vector<vk::raii::CommandBuffer> mComputeCommandBuffers;
 	vk::raii::Semaphore mSemaphore{nullptr};
 	uint64_t mTimelineValue{0};

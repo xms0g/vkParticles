@@ -117,7 +117,7 @@ void Renderer::render(const float deltaTime) {
 			.pWaitSemaphores = &*mSemaphore,
 			.pWaitDstStageMask = &waitStage,
 			.commandBufferCount = 1,
-			.pCommandBuffers = &*mCommandBuffers[mFrameIndex],
+			.pCommandBuffers = &*mGraphicsCommandBuffers[mFrameIndex],
 			.signalSemaphoreCount = 1,
 			.pSignalSemaphores = &*mSemaphore
 		};
@@ -436,7 +436,7 @@ void Renderer::createGraphicsPipeline() {
 	};
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
-	mPipelineLayout = vk::raii::PipelineLayout(mDevice, pipelineLayoutInfo);
+	mGraphicsPipelineLayout = vk::raii::PipelineLayout(mDevice, pipelineLayoutInfo);
 
 	vk::StructureChain<
 		vk::GraphicsPipelineCreateInfo,
@@ -451,7 +451,7 @@ void Renderer::createGraphicsPipeline() {
 			.pMultisampleState = &multisampling,
 			.pColorBlendState = &colorBlending,
 			.pDynamicState = &dynamicState,
-			.layout = mPipelineLayout,
+			.layout = mGraphicsPipelineLayout,
 			.renderPass = nullptr
 		},
 		{
@@ -676,7 +676,7 @@ void Renderer::createBuffer(
 }
 
 void Renderer::createCommandBuffers() {
-	mCommandBuffers.clear();
+	mGraphicsCommandBuffers.clear();
 
 	const vk::CommandBufferAllocateInfo allocInfo{
 		.commandPool = *mCommandPool,
@@ -684,7 +684,7 @@ void Renderer::createCommandBuffers() {
 		.commandBufferCount = MAX_FRAMES_IN_FLIGHT
 	};
 
-	mCommandBuffers = vk::raii::CommandBuffers(mDevice, allocInfo);
+	mGraphicsCommandBuffers = vk::raii::CommandBuffers(mDevice, allocInfo);
 }
 
 void Renderer::createComputeCommandBuffers() {
@@ -701,7 +701,7 @@ void Renderer::createComputeCommandBuffers() {
 }
 
 void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) const {
-	auto& commandBuffer = mCommandBuffers[mFrameIndex];
+	auto& commandBuffer = mGraphicsCommandBuffers[mFrameIndex];
 	commandBuffer.reset();
 	commandBuffer.begin({});
 
