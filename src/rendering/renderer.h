@@ -3,6 +3,7 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan_raii.hpp>
 
+class Buffer;
 class Window;
 
 class Renderer {
@@ -48,13 +49,6 @@ private:
 
 	void createComputeDescriptorSetLayout();
 
-	void createBuffer(
-		vk::DeviceSize size,
-		vk::BufferUsageFlags usage,
-		vk::MemoryPropertyFlags properties,
-		vk::raii::Buffer& buffer,
-		vk::raii::DeviceMemory& bufferMemory) const;
-
 	void createCommandBuffers();
 
 	void createComputeCommandBuffers();
@@ -83,14 +77,12 @@ private:
 
 	static vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes);
 
+	[[nodiscard]]
 	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const;
 
 	static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& surfaceCapabilities);
 
-	[[nodiscard]]
-	uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
-
-	void copyBuffer(const vk::raii::Buffer& srcBuffer, const vk::raii::Buffer& dstBuffer, vk::DeviceSize size) const;
+	void copyBuffer(const Buffer& dstBuffer, const Buffer& srcBuffer, vk::DeviceSize size) const;
 
 	void updateUniformBuffer(uint32_t currentImage, float deltaTime) const;
 
@@ -133,11 +125,8 @@ private:
 	vk::raii::PipelineLayout mComputePipelineLayout{nullptr};
 	vk::raii::Pipeline mGraphicsPipeline{nullptr};
 	vk::raii::Pipeline mComputePipeline{nullptr};
-	std::vector<vk::raii::Buffer> mUniformBuffers;
-	std::vector<vk::raii::DeviceMemory> mUniformBuffersMemory;
-	std::vector<void*> mUniformBuffersMapped;
-	std::vector<vk::raii::Buffer> mShaderStorageBuffers;
-	std::vector<vk::raii::DeviceMemory> mShaderStorageBuffersMemory;
+	std::vector<Buffer> mUniformBuffers;
+	std::vector<Buffer> mShaderStorageBuffers;
 	vk::raii::CommandPool mCommandPool{nullptr};
 	std::vector<vk::raii::CommandBuffer> mGraphicsCommandBuffers;
 	std::vector<vk::raii::CommandBuffer> mComputeCommandBuffers;

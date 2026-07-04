@@ -19,6 +19,7 @@
 #include "../core/window.h"
 #include "../config/config.hpp"
 #include "../io/filesystem.h"
+#include "buffer.h"
 
 struct UniformBufferObject {
 	float deltaTime = 1.0f;
@@ -57,7 +58,7 @@ int Renderer::init(Window* window) {
 }
 
 void Renderer::render(const float deltaTime) {
-	auto [result, imageIndex] = mSwapChain.acquireNextImage(UINT64_MAX,nullptr, *mFences[mFrameIndex]);
+	auto [result, imageIndex] = mSwapChain.acquireNextImage(UINT64_MAX, nullptr, *mFences[mFrameIndex]);
 
 	auto fenceResult = mDevice.waitForFences(*mFences[mFrameIndex], vk::True, UINT64_MAX);
 	if (fenceResult != vk::Result::eSuccess) {
@@ -71,9 +72,7 @@ void Renderer::render(const float deltaTime) {
 	uint64_t graphicsWaitValue = computeSignalValue;
 	uint64_t graphicsSignalValue = ++mTimelineValue;
 
-	updateUniformBuffer(mFrameIndex, deltaTime);
-
-	{
+	updateUniformBuffer(mFrameIndex, deltaTime); {
 		recordComputeCommandBuffer();
 		// Submit compute work
 		vk::TimelineSemaphoreSubmitInfo computeTimelineInfo{
@@ -97,8 +96,7 @@ void Renderer::render(const float deltaTime) {
 		};
 
 		mGraphicsComputeQueue.submit(computeSubmitInfo, nullptr);
-	}
-	{
+	} {
 		// Record graphics command buffer
 		recordGraphicsCommandBuffer(imageIndex);
 
@@ -500,23 +498,17 @@ void Renderer::createCommandPool() {
 
 void Renderer::createUniformBuffers() {
 	mUniformBuffers.clear();
-	mUniformBuffersMemory.clear();
-	mUniformBuffersMapped.clear();
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 		constexpr vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
-		vk::raii::Buffer buffer({});
-		vk::raii::DeviceMemory bufferMem({});
-		createBuffer(
+		mUniformBuffers.emplace_back(
 			bufferSize,
+			mDevice,
+			mPhysicalDevice,
 			vk::BufferUsageFlagBits::eUniformBuffer,
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-			buffer,
-			bufferMem);
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
-		mUniformBuffers.emplace_back(std::move(buffer));
-		mUniformBuffersMemory.emplace_back(std::move(bufferMem));
-		mUniformBuffersMapped.emplace_back(mUniformBuffersMemory[i].mapMemory(0, bufferSize));
+		mUniformBuffers[i].map(bufferSize);
 	}
 }
 
@@ -525,38 +517,34 @@ void Renderer::createShaderStorageBuffers() {
 	constexpr vk::DeviceSize bufferSize = sizeof(Particle) * PARTICLE_COUNT;
 
 	// Create a staging buffer used to upload data to the gpu
-	vk::raii::Buffer stagingBuffer({});
-	vk::raii::DeviceMemory stagingBufferMemory({});
-	createBuffer(
+	Buffer stagingBuffer{
 		bufferSize,
+		mDevice,
+		mPhysicalDevice,
 		vk::BufferUsageFlagBits::eTransferSrc,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-		stagingBuffer,
-		stagingBufferMemory);
+		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+	};
 
-	void* dataStaging = stagingBufferMemory.mapMemory(0, bufferSize);
-	memcpy(dataStaging, particles.data(), bufferSize);
-	stagingBufferMemory.unmapMemory();
+	void* mem = stagingBuffer.map(bufferSize);
+	memcpy(mem, particles.data(), bufferSize);
+	stagingBuffer.unmap();
 
 	mShaderStorageBuffers.clear();
-	mShaderStorageBuffersMemory.clear();
 
 	// Copy initial particle data to all storage buffers
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		vk::raii::Buffer shaderStorageBuffer({});
-		vk::raii::DeviceMemory shaderStorageBufferMemory({});
-
-		createBuffer(
+		Buffer ssbo{
 			bufferSize,
-			vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-			vk::MemoryPropertyFlagBits::eDeviceLocal,
-			shaderStorageBuffer,
-			shaderStorageBufferMemory);
+			mDevice,
+			mPhysicalDevice,
+			vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer |
+			vk::BufferUsageFlagBits::eTransferDst,
+			vk::MemoryPropertyFlagBits::eDeviceLocal
+		};
 
-		copyBuffer(stagingBuffer, shaderStorageBuffer, bufferSize);
+		copyBuffer(ssbo,stagingBuffer, bufferSize);
 
-		mShaderStorageBuffers.emplace_back(std::move(shaderStorageBuffer));
-		mShaderStorageBuffersMemory.emplace_back(std::move(shaderStorageBufferMemory));
+		mShaderStorageBuffers.emplace_back(std::move(ssbo));
 	}
 }
 
@@ -589,18 +577,18 @@ void Renderer::createComputeDescriptorSets() {
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 		vk::DescriptorBufferInfo bufferInfo{
-			.buffer = mUniformBuffers[i],
+			.buffer = mUniformBuffers[i].getBuffer(),
 			.offset = 0,
 			.range = sizeof(UniformBufferObject)
 		};
 
 		vk::DescriptorBufferInfo storageBufferInfoLastFrame{
-			.buffer = mShaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT],
+			.buffer = mShaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT].getBuffer(),
 			.offset = 0,
 			.range = sizeof(Particle) * PARTICLE_COUNT
 		};
 		vk::DescriptorBufferInfo storageBufferInfoCurrentFrame{
-			.buffer = mShaderStorageBuffers[i],
+			.buffer = mShaderStorageBuffers[i].getBuffer(),
 			.offset = 0,
 			.range = sizeof(Particle) * PARTICLE_COUNT
 		};
@@ -643,9 +631,12 @@ void Renderer::createComputeDescriptorSets() {
 
 void Renderer::createComputeDescriptorSetLayout() {
 	std::array<vk::DescriptorSetLayoutBinding, 3> layoutBindings{
-		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eCompute,nullptr),
-		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute,nullptr),
-		vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute,nullptr)
+		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eCompute,
+		                               nullptr),
+		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute,
+		                               nullptr),
+		vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute,
+		                               nullptr)
 	};
 
 	const vk::DescriptorSetLayoutCreateInfo layoutInfo{
@@ -654,25 +645,6 @@ void Renderer::createComputeDescriptorSetLayout() {
 	};
 
 	mComputeDescriptorSetLayout = vk::raii::DescriptorSetLayout(mDevice, layoutInfo);
-}
-
-void Renderer::createBuffer(
-	const vk::DeviceSize size,
-	const vk::BufferUsageFlags usage,
-	const vk::MemoryPropertyFlags properties,
-	vk::raii::Buffer& buffer,
-	vk::raii::DeviceMemory& bufferMemory) const {
-	const vk::BufferCreateInfo bufferInfo{.size = size, .usage = usage, .sharingMode = vk::SharingMode::eExclusive};
-	buffer = vk::raii::Buffer(mDevice, bufferInfo);
-
-	const vk::MemoryRequirements memRequirements = buffer.getMemoryRequirements();
-	const vk::MemoryAllocateInfo allocInfo{
-		.allocationSize = memRequirements.size,
-		.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties)
-	};
-
-	bufferMemory = vk::raii::DeviceMemory(mDevice, allocInfo);
-	buffer.bindMemory(bufferMemory, 0);
 }
 
 void Renderer::createCommandBuffers() {
@@ -692,8 +664,8 @@ void Renderer::createComputeCommandBuffers() {
 
 	vk::CommandBufferAllocateInfo allocInfo{
 		.commandPool = *mCommandPool,
-		 .level = vk::CommandBufferLevel::ePrimary,
-		 .commandBufferCount = MAX_FRAMES_IN_FLIGHT
+		.level = vk::CommandBufferLevel::ePrimary,
+		.commandBufferCount = MAX_FRAMES_IN_FLIGHT
 
 	};
 
@@ -739,7 +711,7 @@ void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) const {
 	commandBuffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(mSwapChainExtent.width),
 	                                          static_cast<float>(mSwapChainExtent.height), 0.0f, 1.0f));
 	commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), mSwapChainExtent));
-	commandBuffer.bindVertexBuffers(0, {mShaderStorageBuffers[mFrameIndex]}, {0});
+	commandBuffer.bindVertexBuffers(0, {mShaderStorageBuffers[mFrameIndex].getBuffer()}, {0});
 	commandBuffer.draw(PARTICLE_COUNT, 1, 0, 0);
 	commandBuffer.endRendering();
 	// After rendering, transition the swapchain image to PRESENT_SRC
@@ -888,7 +860,7 @@ vk::PresentModeKHR Renderer::chooseSwapPresentMode(const std::vector<vk::Present
 	return vk::PresentModeKHR::eFifo;
 }
 
-vk::Extent2D Renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) {
+vk::Extent2D Renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const {
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 		return capabilities.currentExtent;
 	}
@@ -912,24 +884,12 @@ uint32_t Renderer::chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& sur
 	return minImageCount;
 }
 
-uint32_t Renderer::findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const {
-	const vk::PhysicalDeviceMemoryProperties memProperties = mPhysicalDevice.getMemoryProperties();
-
-	for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
-		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-			return i;
-		}
-	}
-
-	throw std::runtime_error("Failed to find suitable memory type!");
-}
-
 void Renderer::copyBuffer(
-	const vk::raii::Buffer& srcBuffer,
-	const vk::raii::Buffer& dstBuffer,
+	const Buffer& dstBuffer,
+	const Buffer& srcBuffer,
 	const vk::DeviceSize size) const {
 	const vk::raii::CommandBuffer commandCopyBuffer = beginSingleTimeCommands();
-	commandCopyBuffer.copyBuffer(*srcBuffer, *dstBuffer, vk::BufferCopy(0, 0, size));
+	commandCopyBuffer.copyBuffer(&*srcBuffer.getBuffer(), &*dstBuffer.getBuffer(), vk::BufferCopy(0, 0, size));
 	endSingleTimeCommands(commandCopyBuffer);
 }
 
@@ -937,7 +897,7 @@ void Renderer::updateUniformBuffer(const uint32_t currentImage, const float delt
 	UniformBufferObject ubo{};
 	ubo.deltaTime = static_cast<float>(deltaTime) * 2.0f;
 
-	memcpy(mUniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+	memcpy(mUniformBuffers[currentImage].getMapped(), &ubo, sizeof(ubo));
 }
 
 vk::raii::ShaderModule Renderer::createShaderModule(const std::vector<char>& code) const {
