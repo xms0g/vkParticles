@@ -77,15 +77,15 @@ private:
 		const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData);
 
-	bool checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice);
+	static bool checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice);
 
-	vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats);
+	static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats);
 
-	vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes);
+	static vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes);
 
-	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
+	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const;
 
-	uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& surfaceCapabilities);
+	static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& surfaceCapabilities);
 
 	[[nodiscard]]
 	uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
@@ -135,9 +135,9 @@ private:
 	vk::raii::Pipeline mComputePipeline{nullptr};
 	std::vector<vk::raii::Buffer> mUniformBuffers;
 	std::vector<vk::raii::DeviceMemory> mUniformBuffersMemory;
+	std::vector<void*> mUniformBuffersMapped;
 	std::vector<vk::raii::Buffer> mShaderStorageBuffers;
 	std::vector<vk::raii::DeviceMemory> mShaderStorageBuffersMemory;
-	std::vector<void*> mUniformBuffersMapped;
 	vk::raii::CommandPool mCommandPool{nullptr};
 	std::vector<vk::raii::CommandBuffer> mGraphicsCommandBuffers;
 	std::vector<vk::raii::CommandBuffer> mComputeCommandBuffers;
