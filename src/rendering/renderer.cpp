@@ -544,19 +544,19 @@ void Renderer::createShaderStorageBuffers() {
 	// Copy initial particle data to all storage buffers
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 		vk::raii::Buffer shaderStorageBuffer({});
-		vk::raii::DeviceMemory shaderStorageBufferTemp({});
+		vk::raii::DeviceMemory shaderStorageBufferMemory({});
 
 		createBuffer(
 			bufferSize,
 			vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
 			vk::MemoryPropertyFlagBits::eDeviceLocal,
 			shaderStorageBuffer,
-			shaderStorageBufferTemp);
+			shaderStorageBufferMemory);
 
 		copyBuffer(stagingBuffer, shaderStorageBuffer, bufferSize);
 
 		mShaderStorageBuffers.emplace_back(std::move(shaderStorageBuffer));
-		mShaderStorageBuffersMemory.emplace_back(std::move(shaderStorageBufferTemp));
+		mShaderStorageBuffersMemory.emplace_back(std::move(shaderStorageBufferMemory));
 	}
 }
 
