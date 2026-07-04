@@ -2,6 +2,7 @@
 #include <cstdint>
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan_raii.hpp>
+#include "swapchain.h"
 
 class Buffer;
 class Window;
@@ -27,12 +28,6 @@ private:
 
 	void createLogicalDevice();
 
-	void createSwapchain();
-
-	void createSwapchainImageViews();
-
-	void recreateSwapchain();
-
 	void createGraphicsPipeline();
 
 	void createComputePipeline();
@@ -51,7 +46,7 @@ private:
 
 	void createCommandBuffers();
 
-	void recordGraphicsCommandBuffer(uint32_t imageIndex) const;
+	void recordGraphicsCommandBuffer(uint32_t imageIndex);
 
 	void recordComputeCommandBuffer();
 
@@ -102,11 +97,7 @@ private:
 	vk::raii::Queue mQueue{nullptr};
 	uint32_t mQueueIndex{static_cast<uint32_t>(~0)};
 	vk::raii::SurfaceKHR mSurface{nullptr};
-	vk::raii::SwapchainKHR mSwapChain{nullptr};
-	vk::SurfaceFormatKHR mSwapChainSurfaceFormat;
-	vk::Extent2D mSwapChainExtent;
-	std::vector<vk::Image> mSwapChainImages;
-	std::vector<vk::raii::ImageView> mSwapChainImageViews;
+	Swapchain mSwapChain;
 	vk::raii::DescriptorSetLayout mComputeDescriptorSetLayout{nullptr};
 	vk::raii::DescriptorPool mDescriptorPool{nullptr};
 	std::vector<vk::raii::DescriptorSet> mComputeDescriptorSets;
