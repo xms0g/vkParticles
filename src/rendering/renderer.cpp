@@ -50,7 +50,6 @@ int Renderer::init(Window* window) {
 		createDescriptorPool();
 		createComputeDescriptorSets();
 		createCommandBuffers();
-		createComputeCommandBuffers();
 		createSyncObjects();
 	} catch (const std::runtime_error& e) {
 		throw std::runtime_error(e.what());
@@ -650,6 +649,7 @@ void Renderer::createComputeDescriptorSetLayout() {
 
 void Renderer::createCommandBuffers() {
 	mGraphicsCommandBuffers.clear();
+	mComputeCommandBuffers.clear();
 
 	const vk::CommandBufferAllocateInfo allocInfo{
 		.commandPool = *mCommandPool,
@@ -658,18 +658,6 @@ void Renderer::createCommandBuffers() {
 	};
 
 	mGraphicsCommandBuffers = vk::raii::CommandBuffers(mDevice, allocInfo);
-}
-
-void Renderer::createComputeCommandBuffers() {
-	mComputeCommandBuffers.clear();
-
-	vk::CommandBufferAllocateInfo allocInfo{
-		.commandPool = *mCommandPool,
-		.level = vk::CommandBufferLevel::ePrimary,
-		.commandBufferCount = MAX_FRAMES_IN_FLIGHT
-
-	};
-
 	mComputeCommandBuffers = vk::raii::CommandBuffers(mDevice, allocInfo);
 }
 

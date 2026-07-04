@@ -51,8 +51,6 @@ private:
 
 	void createCommandBuffers();
 
-	void createComputeCommandBuffers();
-
 	void recordGraphicsCommandBuffer(uint32_t imageIndex) const;
 
 	void recordComputeCommandBuffer();
