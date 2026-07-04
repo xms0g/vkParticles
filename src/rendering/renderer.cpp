@@ -100,7 +100,7 @@ void Renderer::render(const float deltaTime) {
 	}
 	{
 		// Record graphics command buffer
-		recordCommandBuffer(imageIndex);
+		recordGraphicsCommandBuffer(imageIndex);
 
 		// Submit graphics work (waits for compute to finish)
 		vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eVertexInput;
@@ -700,7 +700,7 @@ void Renderer::createComputeCommandBuffers() {
 	mComputeCommandBuffers = vk::raii::CommandBuffers(mDevice, allocInfo);
 }
 
-void Renderer::recordCommandBuffer(const uint32_t imageIndex) const {
+void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) const {
 	auto& commandBuffer = mCommandBuffers[mFrameIndex];
 	commandBuffer.reset();
 	commandBuffer.begin({});
@@ -978,13 +978,13 @@ void Renderer::transitionImageLayout(
 		}
 	};
 
-	const vk::DependencyInfo dependency_info = {
+	const vk::DependencyInfo dependencyInfo = {
 		.dependencyFlags = {},
 		.imageMemoryBarrierCount = 1,
 		.pImageMemoryBarriers = &barrier
 	};
 
-	commandBuffer.pipelineBarrier2(dependency_info);
+	commandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
 vk::raii::CommandBuffer Renderer::beginSingleTimeCommands() const {

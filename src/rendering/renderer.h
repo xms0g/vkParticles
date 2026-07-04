@@ -59,7 +59,7 @@ private:
 
 	void createComputeCommandBuffers();
 
-	void recordCommandBuffer(uint32_t imageIndex) const;
+	void recordGraphicsCommandBuffer(uint32_t imageIndex) const;
 
 	void recordComputeCommandBuffer();
 
