@@ -95,7 +95,7 @@ void Renderer::render(const float deltaTime) {
 			.pSignalSemaphores = &*mSemaphore
 		};
 
-		mGraphicsComputeQueue.submit(computeSubmitInfo, nullptr);
+		mQueue.submit(computeSubmitInfo, nullptr);
 	} {
 		// Record graphics command buffer
 		recordGraphicsCommandBuffer(imageIndex);
@@ -120,7 +120,7 @@ void Renderer::render(const float deltaTime) {
 			.pSignalSemaphores = &*mSemaphore
 		};
 
-		mGraphicsComputeQueue.submit(graphicsSubmitInfo, nullptr);
+		mQueue.submit(graphicsSubmitInfo, nullptr);
 
 		// Present the image (wait for graphics to finish)
 		const vk::SemaphoreWaitInfo waitInfo{
@@ -143,7 +143,7 @@ void Renderer::render(const float deltaTime) {
 			.pImageIndices = &imageIndex
 		};
 
-		result = mGraphicsComputeQueue.presentKHR(presentInfo);
+		result = mQueue.presentKHR(presentInfo);
 		// Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
 		// here and does not need to be caught by an exception.
 		if ((result == vk::Result::eSuboptimalKHR) ||
@@ -259,12 +259,12 @@ void Renderer::createLogicalDevice() {
 		if (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics &&
 		    queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eCompute &&
 		    mPhysicalDevice.getSurfaceSupportKHR(i, *mSurface)) {
-			mGraphicsAndComputeIndex = i;
+			mQueueIndex = i;
 			break;
 		}
 	}
 
-	if (mGraphicsAndComputeIndex == ~0) {
+	if (mQueueIndex == ~0) {
 		throw std::runtime_error("Could not find a queue for graphics and present -> terminating");
 	}
 
@@ -282,7 +282,7 @@ void Renderer::createLogicalDevice() {
 
 	float queuePriority = 0.5f;
 	vk::DeviceQueueCreateInfo deviceQueueCreateInfo{
-		.queueFamilyIndex = mGraphicsAndComputeIndex,
+		.queueFamilyIndex = mQueueIndex,
 		.queueCount = 1,
 		.pQueuePriorities = &queuePriority
 	};
@@ -296,7 +296,7 @@ void Renderer::createLogicalDevice() {
 	};
 
 	mDevice = vk::raii::Device(mPhysicalDevice, deviceCreateInfo);
-	mGraphicsComputeQueue = vk::raii::Queue(mDevice, mGraphicsAndComputeIndex, 0);
+	mQueue = vk::raii::Queue(mDevice, mQueueIndex, 0);
 }
 
 void Renderer::createSwapchain() {
@@ -490,7 +490,7 @@ void Renderer::createComputePipeline() {
 void Renderer::createCommandPool() {
 	const vk::CommandPoolCreateInfo poolInfo{
 		.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-		.queueFamilyIndex = mGraphicsAndComputeIndex
+		.queueFamilyIndex = mQueueIndex
 	};
 
 	mCommandPool = vk::raii::CommandPool(mDevice, poolInfo);
@@ -911,6 +911,6 @@ void Renderer::endSingleTimeCommands(const vk::raii::CommandBuffer& commandBuffe
 
 	const vk::SubmitInfo submitInfo{.commandBufferCount = 1, .pCommandBuffers = &*commandBuffer};
 
-	mGraphicsComputeQueue.submit(submitInfo, nullptr);
-	mGraphicsComputeQueue.waitIdle();
+	mQueue.submit(submitInfo, nullptr);
+	mQueue.waitIdle();
 }
