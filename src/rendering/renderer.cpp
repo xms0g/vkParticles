@@ -14,12 +14,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "particle.hpp"
+#include "buffer.h"
+#include "swapchain.hpp"
 #include "deviceExtension.hpp"
 #include "validation.hpp"
 #include "../core/window.h"
 #include "../config/config.hpp"
 #include "../io/filesystem.h"
-#include "buffer.h"
 
 struct UniformBufferObject {
 	float deltaTime = 1.0f;
@@ -301,15 +302,15 @@ void Renderer::createLogicalDevice() {
 
 void Renderer::createSwapchain() {
 	const vk::SurfaceCapabilitiesKHR surfaceCapabilities = mPhysicalDevice.getSurfaceCapabilitiesKHR(*mSurface);
-	mSwapChainExtent = chooseSwapExtent(surfaceCapabilities);
-	const uint32_t minImageCount = chooseSwapMinImageCount(surfaceCapabilities);
+	mSwapChainExtent = swapchain::chooseSwapExtent(surfaceCapabilities, mWindow->nativeHandle());
+	const uint32_t minImageCount = swapchain::chooseSwapMinImageCount(surfaceCapabilities);
 
 	const std::vector<vk::SurfaceFormatKHR> availableFormats = mPhysicalDevice.getSurfaceFormatsKHR(*mSurface);
-	const vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(availableFormats);
+	const vk::SurfaceFormatKHR surfaceFormat = swapchain::chooseSwapSurfaceFormat(availableFormats);
 	mSwapChainSurfaceFormat = surfaceFormat;
 
 	const std::vector<vk::PresentModeKHR> availablePresentModes = mPhysicalDevice.getSurfacePresentModesKHR(*mSurface);
-	const vk::PresentModeKHR presentMode = chooseSwapPresentMode(availablePresentModes);
+	const vk::PresentModeKHR presentMode = swapchain::chooseSwapPresentMode(availablePresentModes);
 
 	vk::SwapchainCreateInfoKHR swapChainCreateInfo{
 		.surface = *mSurface,
@@ -838,50 +839,6 @@ bool Renderer::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 			supportsExtendedDynamicState;
 
 	return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions && supportsRequiredFeatures;
-}
-
-vk::SurfaceFormatKHR Renderer::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) {
-	for (const auto& format: availableFormats) {
-		if (format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
-			return format;
-		}
-	}
-
-	return availableFormats[0];
-}
-
-vk::PresentModeKHR Renderer::chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes) {
-	for (const auto& mode: availablePresentModes) {
-		if (mode == vk::PresentModeKHR::eMailbox) {
-			return mode;
-		}
-	}
-
-	return vk::PresentModeKHR::eFifo;
-}
-
-vk::Extent2D Renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const {
-	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-		return capabilities.currentExtent;
-	}
-
-	int width, height;
-	glfwGetFramebufferSize(mWindow->nativeHandle(), &width, &height);
-
-	return {
-		std::clamp<uint32_t>(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
-		std::clamp<uint32_t>(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
-	};
-}
-
-uint32_t Renderer::chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& surfaceCapabilities) {
-	auto minImageCount = std::max(3u, surfaceCapabilities.minImageCount);
-
-	if ((surfaceCapabilities.maxImageCount > 0) && (surfaceCapabilities.maxImageCount < minImageCount)) {
-		minImageCount = surfaceCapabilities.maxImageCount;
-	}
-
-	return minImageCount;
 }
 
 void Renderer::copyBuffer(

@@ -12,8 +12,6 @@ public:
 
 	void updateFpsCounter(double dt);
 
-	float deltaTime() const;
-
 	[[nodiscard]]
 	bool shouldClose() const;
 

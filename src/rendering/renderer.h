@@ -73,15 +73,6 @@ private:
 
 	static bool checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice);
 
-	static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats);
-
-	static vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes);
-
-	[[nodiscard]]
-	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const;
-
-	static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& surfaceCapabilities);
-
 	void copyBuffer(const Buffer& dstBuffer, const Buffer& srcBuffer, vk::DeviceSize size) const;
 
 	void updateUniformBuffer(uint32_t currentImage, float deltaTime) const;
