@@ -3,6 +3,7 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan_raii.hpp>
 #include "swapchain.h"
+#include "commandPool.h"
 
 class Buffer;
 class Window;
@@ -31,8 +32,6 @@ private:
 	void createGraphicsPipeline();
 
 	void createComputePipeline();
-
-	void createCommandPool();
 
 	void createUniformBuffers();
 
@@ -101,7 +100,7 @@ private:
 	vk::raii::Pipeline mComputePipeline{nullptr};
 	std::vector<Buffer> mUniformBuffers;
 	std::vector<Buffer> mShaderStorageBuffers;
-	vk::raii::CommandPool mCommandPool{nullptr};
+	CommandPool mCommandPool;
 	std::vector<vk::raii::CommandBuffer> mGraphicsCommandBuffers;
 	std::vector<vk::raii::CommandBuffer> mComputeCommandBuffers;
 	vk::raii::Semaphore mSemaphore{nullptr};

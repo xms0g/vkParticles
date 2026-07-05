@@ -40,7 +40,7 @@ int Renderer::init(Window* window) {
 		createComputeDescriptorSetLayout();
 		createGraphicsPipeline();
 		createComputePipeline();
-		createCommandPool();
+		mCommandPool.create(mDevice, mQueueIndex);
 		createShaderStorageBuffers();
 		createUniformBuffers();
 		createDescriptorPool();
@@ -428,15 +428,6 @@ void Renderer::createComputePipeline() {
 	mComputePipeline = vk::raii::Pipeline(mDevice, nullptr, pipelineInfo);
 }
 
-void Renderer::createCommandPool() {
-	const vk::CommandPoolCreateInfo poolInfo{
-		.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-		.queueFamilyIndex = mQueueIndex
-	};
-
-	mCommandPool = vk::raii::CommandPool(mDevice, poolInfo);
-}
-
 void Renderer::createUniformBuffers() {
 	mUniformBuffers.clear();
 
@@ -593,7 +584,7 @@ void Renderer::createCommandBuffers() {
 	mComputeCommandBuffers.clear();
 
 	const vk::CommandBufferAllocateInfo allocInfo{
-		.commandPool = *mCommandPool,
+		.commandPool = **mCommandPool,
 		.level = vk::CommandBufferLevel::ePrimary,
 		.commandBufferCount = MAX_FRAMES_IN_FLIGHT
 	};
@@ -802,7 +793,7 @@ vk::raii::ShaderModule Renderer::createShaderModule(const std::vector<char>& cod
 
 vk::raii::CommandBuffer Renderer::beginSingleTimeCommands() const {
 	const vk::CommandBufferAllocateInfo allocInfo{
-		.commandPool = mCommandPool,
+		.commandPool = **mCommandPool,
 		.level = vk::CommandBufferLevel::ePrimary,
 		.commandBufferCount = 1
 	};
