@@ -73,16 +73,6 @@ private:
 	[[nodiscard]]
 	vk::raii::ShaderModule createShaderModule(const std::vector<char>& code) const;
 
-	static void transitionImageLayout(
-		vk::Image image,
-		vk::ImageLayout oldLayout,
-		vk::ImageLayout newLayout,
-		vk::AccessFlags2 srcAccessMask,
-		vk::AccessFlags2 dstAccessMask,
-		vk::PipelineStageFlags2 srcStageMask,
-		vk::PipelineStageFlags2 dstStageMask,
-		const vk::raii::CommandBuffer& commandBuffer) ;
-
 	[[nodiscard]]
 	vk::raii::CommandBuffer beginSingleTimeCommands() const;
 
@@ -116,7 +106,7 @@ private:
 	std::vector<vk::raii::CommandBuffer> mComputeCommandBuffers;
 	vk::raii::Semaphore mSemaphore{nullptr};
 	uint64_t mTimelineValue{0};
-	std::vector<vk::raii::Fence> mFences;
 	uint32_t mFrameIndex{0};
+	std::vector<vk::raii::Fence> mFences;
 	vk::raii::DebugUtilsMessengerEXT mDebugMessenger{nullptr};
 };

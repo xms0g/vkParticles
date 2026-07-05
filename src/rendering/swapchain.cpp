@@ -1,5 +1,9 @@
 #include "swapchain.h"
 
+vk::raii::SwapchainKHR& Swapchain::native() {
+	return mSwapChain;
+}
+
 vk::SurfaceFormatKHR& Swapchain::surfaceFormat() {
 	return mSwapChainSurfaceFormat;
 }

@@ -7,6 +7,8 @@ class Swapchain {
 public:
 	Swapchain() = default;
 
+	vk::raii::SwapchainKHR& native();
+
 	vk::SurfaceFormatKHR& surfaceFormat();
 
 	std::vector<vk::Image>& images();

@@ -17,6 +17,7 @@
 #include "buffer.h"
 #include "swapchain.h"
 #include "deviceExtension.hpp"
+#include "image.hpp"
 #include "validation.hpp"
 #include "../core/window.h"
 #include "../config/config.hpp"
@@ -608,7 +609,7 @@ void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 
 	const auto image = mSwapChain.images()[imageIndex];
 	// Before starting rendering, transition the swapchain image to COLOR_ATTACHMENT_OPTIMAL
-	transitionImageLayout(
+	Image::transitionImageLayout(
 		image,
 		vk::ImageLayout::eUndefined,
 		vk::ImageLayout::eColorAttachmentOptimal,
@@ -651,7 +652,7 @@ void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	commandBuffer.draw(PARTICLE_COUNT, 1, 0, 0);
 	commandBuffer.endRendering();
 	// After rendering, transition the swapchain image to PRESENT_SRC
-	transitionImageLayout(
+	Image::transitionImageLayout(
 		image,
 		vk::ImageLayout::eColorAttachmentOptimal,
 		vk::ImageLayout::ePresentSrcKHR,
@@ -797,43 +798,6 @@ vk::raii::ShaderModule Renderer::createShaderModule(const std::vector<char>& cod
 
 	vk::raii::ShaderModule shaderModule{mDevice, createInfo};
 	return shaderModule;
-}
-
-void Renderer::transitionImageLayout(
-	const vk::Image image,
-	const vk::ImageLayout oldLayout,
-	const vk::ImageLayout newLayout,
-	const vk::AccessFlags2 srcAccessMask,
-	const vk::AccessFlags2 dstAccessMask,
-	const vk::PipelineStageFlags2 srcStageMask,
-	const vk::PipelineStageFlags2 dstStageMask,
-	const vk::raii::CommandBuffer& commandBuffer) {
-	vk::ImageMemoryBarrier2 barrier = {
-		.srcStageMask = srcStageMask,
-		.srcAccessMask = srcAccessMask,
-		.dstStageMask = dstStageMask,
-		.dstAccessMask = dstAccessMask,
-		.oldLayout = oldLayout,
-		.newLayout = newLayout,
-		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.image = image,
-		.subresourceRange = {
-			.aspectMask = vk::ImageAspectFlagBits::eColor,
-			.baseMipLevel = 0,
-			.levelCount = 1,
-			.baseArrayLayer = 0,
-			.layerCount = 1
-		}
-	};
-
-	const vk::DependencyInfo dependencyInfo = {
-		.dependencyFlags = {},
-		.imageMemoryBarrierCount = 1,
-		.pImageMemoryBarriers = &barrier
-	};
-
-	commandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
 vk::raii::CommandBuffer Renderer::beginSingleTimeCommands() const {
