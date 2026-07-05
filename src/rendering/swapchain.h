@@ -7,8 +7,6 @@ class Swapchain {
 public:
 	Swapchain() = default;
 
-	vk::raii::SwapchainKHR& native();
-
 	vk::SurfaceFormatKHR& surfaceFormat();
 
 	std::vector<vk::Image>& images();
@@ -30,6 +28,9 @@ public:
 		const vk::raii::Device& device,
 		const vk::raii::PhysicalDevice& phyDev,
 		GLFWwindow* window);
+
+	vk::raii::SwapchainKHR& operator*() noexcept { return mSwapChain; }
+	const vk::raii::SwapchainKHR& operator*() const noexcept { return mSwapChain; }
 
 private:
 	void createSwapchainImageViews(const vk::raii::Device& device);

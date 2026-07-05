@@ -138,7 +138,7 @@ void Renderer::render(const float deltaTime) {
 			.waitSemaphoreCount = 0, // No binary semaphores needed
 			.pWaitSemaphores = nullptr,
 			.swapchainCount = 1,
-			.pSwapchains = &*mSwapChain.native(),
+			.pSwapchains = &**mSwapChain,
 			.pImageIndices = &imageIndex
 		};
 
