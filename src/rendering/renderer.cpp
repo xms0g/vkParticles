@@ -776,10 +776,7 @@ bool Renderer::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 	return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions && supportsRequiredFeatures;
 }
 
-void Renderer::copyBuffer(
-	const Buffer& dstBuffer,
-	const Buffer& srcBuffer,
-	const vk::DeviceSize size) const {
+void Renderer::copyBuffer(const Buffer& dstBuffer, const Buffer& srcBuffer, const vk::DeviceSize size) const {
 	const vk::raii::CommandBuffer commandCopyBuffer = beginSingleTimeCommands();
 	commandCopyBuffer.copyBuffer(&*srcBuffer.getBuffer(), &*dstBuffer.getBuffer(), vk::BufferCopy(0, 0, size));
 	endSingleTimeCommands(commandCopyBuffer);
