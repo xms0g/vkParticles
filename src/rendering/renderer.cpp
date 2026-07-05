@@ -67,7 +67,9 @@ void Renderer::render(const float deltaTime) {
 	uint64_t graphicsWaitValue = computeSignalValue;
 	uint64_t graphicsSignalValue = ++mTimelineValue;
 
-	updateUniformBuffer(mFrameIndex, deltaTime); {
+	updateUniformBuffer(mFrameIndex, deltaTime);
+
+	{
 		recordComputeCommandBuffer();
 		// Submit compute work
 		vk::TimelineSemaphoreSubmitInfo computeTimelineInfo{
@@ -91,7 +93,8 @@ void Renderer::render(const float deltaTime) {
 		};
 
 		mQueue.submit(computeSubmitInfo, nullptr);
-	} {
+	}
+	{
 		// Record graphics command buffer
 		recordGraphicsCommandBuffer(imageIndex);
 
@@ -295,7 +298,7 @@ void Renderer::createLogicalDevice() {
 }
 
 void Renderer::createGraphicsPipeline() {
-	const auto shaderPath = std::filesystem::path(SHADER_BINARY_DIR) / SHADER_NAME;
+	const auto shaderPath = fs::path(SHADER_BINARY_DIR) + SHADER_NAME;
 	const auto shaderCode = fs::readFile(shaderPath);
 	const auto shaderModule = createShaderModule(shaderCode);
 
