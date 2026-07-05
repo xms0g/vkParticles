@@ -5,6 +5,7 @@
 #include "swapchain.h"
 #include "commandPool.h"
 
+class CommandBuffer;
 class Buffer;
 class Window;
 
@@ -101,8 +102,8 @@ private:
 	std::vector<Buffer> mUniformBuffers;
 	std::vector<Buffer> mShaderStorageBuffers;
 	CommandPool mCommandPool;
-	std::vector<vk::raii::CommandBuffer> mGraphicsCommandBuffers;
-	std::vector<vk::raii::CommandBuffer> mComputeCommandBuffers;
+	std::vector<CommandBuffer> mGraphicsCommandBuffers;
+	std::vector<CommandBuffer> mComputeCommandBuffers;
 	vk::raii::Semaphore mSemaphore{nullptr};
 	uint64_t mTimelineValue{0};
 	uint32_t mFrameIndex{0};

@@ -18,6 +18,7 @@
 #include "swapchain.h"
 #include "deviceExtension.hpp"
 #include "image.hpp"
+#include "commandBuffer.h"
 #include "validation.hpp"
 #include "../core/window.h"
 #include "../config/config.hpp"
@@ -88,7 +89,7 @@ void Renderer::render(const float deltaTime) {
 			.pWaitSemaphores = &*mSemaphore,
 			.pWaitDstStageMask = waitStages,
 			.commandBufferCount = 1,
-			.pCommandBuffers = &*mComputeCommandBuffers[mFrameIndex],
+			.pCommandBuffers = &**mComputeCommandBuffers[mFrameIndex],
 			.signalSemaphoreCount = 1,
 			.pSignalSemaphores = &*mSemaphore
 		};
@@ -114,7 +115,7 @@ void Renderer::render(const float deltaTime) {
 			.pWaitSemaphores = &*mSemaphore,
 			.pWaitDstStageMask = &waitStage,
 			.commandBufferCount = 1,
-			.pCommandBuffers = &*mGraphicsCommandBuffers[mFrameIndex],
+			.pCommandBuffers = &**mGraphicsCommandBuffers[mFrameIndex],
 			.signalSemaphoreCount = 1,
 			.pSignalSemaphores = &*mSemaphore
 		};
@@ -583,20 +584,16 @@ void Renderer::createCommandBuffers() {
 	mGraphicsCommandBuffers.clear();
 	mComputeCommandBuffers.clear();
 
-	const vk::CommandBufferAllocateInfo allocInfo{
-		.commandPool = **mCommandPool,
-		.level = vk::CommandBufferLevel::ePrimary,
-		.commandBufferCount = MAX_FRAMES_IN_FLIGHT
-	};
-
-	mGraphicsCommandBuffers = vk::raii::CommandBuffers(mDevice, allocInfo);
-	mComputeCommandBuffers = vk::raii::CommandBuffers(mDevice, allocInfo);
+	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+		mGraphicsCommandBuffers.emplace_back(mDevice, mCommandPool);
+		mComputeCommandBuffers.emplace_back(mDevice, mCommandPool);
+	}
 }
 
 void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	const auto& commandBuffer = mGraphicsCommandBuffers[mFrameIndex];
-	commandBuffer.reset();
-	commandBuffer.begin({});
+	(*commandBuffer).reset();
+	(*commandBuffer).begin({});
 
 	const auto image = mSwapChain.images()[imageIndex];
 	// Before starting rendering, transition the swapchain image to COLOR_ATTACHMENT_OPTIMAL
@@ -608,7 +605,7 @@ void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 		vk::AccessFlagBits2::eColorAttachmentWrite, // dstAccessMask
 		vk::PipelineStageFlagBits2::eColorAttachmentOutput, // srcStage
 		vk::PipelineStageFlagBits2::eColorAttachmentOutput, // dstStage
-		commandBuffer
+		*commandBuffer
 	);
 	constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -627,9 +624,9 @@ void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 		.pColorAttachments = &attachmentInfo
 	};
 
-	commandBuffer.beginRendering(renderingInfo);
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *mGraphicsPipeline);
-	commandBuffer.setViewport(
+	(*commandBuffer).beginRendering(renderingInfo);
+	(*commandBuffer).bindPipeline(vk::PipelineBindPoint::eGraphics, *mGraphicsPipeline);
+	(*commandBuffer).setViewport(
 		0,
 		vk::Viewport(
 			0.0f,
@@ -638,10 +635,10 @@ void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 			static_cast<float>(mSwapChain.extent().height),
 			0.0f,
 			1.0f));
-	commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), mSwapChain.extent()));
-	commandBuffer.bindVertexBuffers(0, {mShaderStorageBuffers[mFrameIndex].getBuffer()}, {0});
-	commandBuffer.draw(PARTICLE_COUNT, 1, 0, 0);
-	commandBuffer.endRendering();
+	(*commandBuffer).setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), mSwapChain.extent()));
+	(*commandBuffer).bindVertexBuffers(0, {mShaderStorageBuffers[mFrameIndex].getBuffer()}, {0});
+	(*commandBuffer).draw(PARTICLE_COUNT, 1, 0, 0);
+	(*commandBuffer).endRendering();
 	// After rendering, transition the swapchain image to PRESENT_SRC
 	Image::transitionImageLayout(
 		image,
@@ -651,20 +648,20 @@ void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 		{}, // dstAccessMask
 		vk::PipelineStageFlagBits2::eColorAttachmentOutput, // srcStage
 		vk::PipelineStageFlagBits2::eBottomOfPipe, // dstStage
-		commandBuffer
+		*commandBuffer
 	);
-	commandBuffer.end();
+	(*commandBuffer).end();
 }
 
 void Renderer::recordComputeCommandBuffer() {
 	const auto& commandBuffer = mComputeCommandBuffers[mFrameIndex];
-	commandBuffer.reset();
-	commandBuffer.begin({});
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, mComputePipeline);
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, mComputePipelineLayout, 0,
+	(*commandBuffer).reset();
+	(*commandBuffer).begin({});
+	(*commandBuffer).bindPipeline(vk::PipelineBindPoint::eCompute, mComputePipeline);
+	(*commandBuffer).bindDescriptorSets(vk::PipelineBindPoint::eCompute, mComputePipelineLayout, 0,
 	                                 {mComputeDescriptorSets[mFrameIndex]}, {});
-	commandBuffer.dispatch(PARTICLE_COUNT / 256, 1, 1);
-	commandBuffer.end();
+	(*commandBuffer).dispatch(PARTICLE_COUNT / 256, 1, 1);
+	(*commandBuffer).end();
 }
 
 void Renderer::createSyncObjects() {
