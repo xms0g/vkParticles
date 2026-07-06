@@ -94,20 +94,23 @@ void Swapchain::createSwapchainImageViews(const vk::raii::Device& device) {
 }
 
 vk::SurfaceFormatKHR Swapchain::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) {
-	for (const auto& format: availableFormats) {
-		if (format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
-			return format;
-		}
+	const auto formatIt = std::ranges::find_if(availableFormats, [](const auto& format) {
+		return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
+	});
+
+	if (formatIt != availableFormats.end()) {
+		return *formatIt;
 	}
 
 	return availableFormats[0];
 }
 
 vk::PresentModeKHR Swapchain::chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes) {
-	for (const auto& mode: availablePresentModes) {
-		if (mode == vk::PresentModeKHR::eMailbox) {
-			return mode;
-		}
+	const auto modeIt = std::ranges::find_if(
+		availablePresentModes, [](const auto& mode) { return mode == vk::PresentModeKHR::eMailbox; });
+
+	if (modeIt != availablePresentModes.end()) {
+		return *modeIt;
 	}
 
 	return vk::PresentModeKHR::eFifo;
