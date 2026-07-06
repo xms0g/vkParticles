@@ -11,7 +11,7 @@ class Window;
 
 class Renderer {
 public:
-	Renderer(Window& window);
+	explicit Renderer(Window& window);
 
 	~Renderer();
 

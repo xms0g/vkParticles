@@ -2,9 +2,9 @@
 #include <string>
 #define GLFW_INCLUDE_VULKAN  
 #include <GLFW/glfw3.h>
-#include "IWindow.hpp"
+#include "baseWindow.hpp"
 
-class Window : public IWindow<GLFWwindow> {
+class Window : public BaseWindow<GLFWwindow> {
 public:
 	Window() = default;
 
