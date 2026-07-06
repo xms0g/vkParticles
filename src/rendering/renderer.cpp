@@ -36,7 +36,7 @@ int Renderer::init() {
 		createSurface();
 		getPhysicalDevice();
 		createLogicalDevice();
-		mSwapChain.create(mSurface, mDevice, mPhysicalDevice, mWindow.nativeHandle());
+		mSwapChain.create(mSurface, mDevice, mPhysicalDevice, *mWindow);
 		createComputeDescriptorSetLayout();
 		createGraphicsPipeline();
 		createComputePipeline();
@@ -149,7 +149,7 @@ void Renderer::render(const float deltaTime) {
 		    (result == vk::Result::eErrorOutOfDateKHR) ||
 		    mWindow.windowResized()) {
 			mWindow.windowResized(false);
-			mSwapChain.recreate(mSurface, mDevice, mPhysicalDevice, mWindow.nativeHandle());
+			mSwapChain.recreate(mSurface, mDevice, mPhysicalDevice, *mWindow);
 		} else {
 			// There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
 			assert(result == vk::Result::eSuccess);
@@ -244,7 +244,7 @@ void Renderer::setupDebugMessenger() {
 
 void Renderer::createSurface() {
 	VkSurfaceKHR surface;
-	if (glfwCreateWindowSurface(*mInstance, mWindow.nativeHandle(), nullptr, &surface) != 0) {
+	if (glfwCreateWindowSurface(*mInstance, &*mWindow, nullptr, &surface) != 0) {
 		throw std::runtime_error("Failed to create window surface!");
 	}
 

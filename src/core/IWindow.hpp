@@ -13,15 +13,14 @@ public:
         initImpl(title, width, height, fullscreen);
     }
 
-    T* nativeHandle() const {
-        return mWindow;
-    }
-
     void clear(const float r = 0.0f, const float g = 0.0f, const float b = 0.0f, const float a = 0.0f) {
         clearImpl(r, g, b, a);
     }
 
 	virtual void swapBuffer() = 0;
+
+	T& operator*() noexcept { return *mWindow; }
+	const T& operator*() const noexcept { return *mWindow; }
 
 protected:
     virtual void initImpl(const char* title, int width, int height, bool fullscreen) = 0;

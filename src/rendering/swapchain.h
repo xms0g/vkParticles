@@ -21,13 +21,13 @@ public:
 		const vk::raii::SurfaceKHR& surface,
 		const vk::raii::Device& device,
 		const vk::raii::PhysicalDevice& phyDev,
-		GLFWwindow* window);
+		GLFWwindow& window);
 
 	void recreate(
 		const vk::raii::SurfaceKHR& surface,
 		const vk::raii::Device& device,
 		const vk::raii::PhysicalDevice& phyDev,
-		GLFWwindow* window);
+		GLFWwindow& window);
 
 	vk::raii::SwapchainKHR& operator*() noexcept { return mSwapChain; }
 	const vk::raii::SwapchainKHR& operator*() const noexcept { return mSwapChain; }
@@ -39,7 +39,7 @@ private:
 
 	static vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes);
 
-	static vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, GLFWwindow* window);
+	static vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, GLFWwindow& window);
 
 	static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& surfaceCapabilities);
 

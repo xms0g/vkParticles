@@ -29,7 +29,7 @@ void Swapchain::create(
 	const vk::raii::SurfaceKHR& surface,
 	const vk::raii::Device& device,
 	const vk::raii::PhysicalDevice& phyDev,
-	GLFWwindow* window) {
+	GLFWwindow& window) {
 	const vk::SurfaceCapabilitiesKHR surfaceCapabilities = phyDev.getSurfaceCapabilitiesKHR(surface);
 	mSwapChainExtent = chooseSwapExtent(surfaceCapabilities, window);
 	const uint32_t minImageCount = chooseSwapMinImageCount(surfaceCapabilities);
@@ -68,7 +68,7 @@ void Swapchain::recreate(
 	const vk::raii::SurfaceKHR& surface,
 	const vk::raii::Device& device,
 	const vk::raii::PhysicalDevice& phyDev,
-	GLFWwindow* window) {
+	GLFWwindow& window) {
 	device.waitIdle();
 
 	mSwapChainImageViews.clear();
@@ -113,13 +113,13 @@ vk::PresentModeKHR Swapchain::chooseSwapPresentMode(const std::vector<vk::Presen
 	return vk::PresentModeKHR::eFifo;
 }
 
-vk::Extent2D Swapchain::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) {
+vk::Extent2D Swapchain::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, GLFWwindow& window) {
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 		return capabilities.currentExtent;
 	}
 
 	int width, height;
-	glfwGetFramebufferSize(window, &width, &height);
+	glfwGetFramebufferSize(&window, &width, &height);
 
 	return {
 		std::clamp<uint32_t>(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
