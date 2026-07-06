@@ -17,7 +17,7 @@
 #include "buffer.h"
 #include "swapchain.h"
 #include "deviceExtension.hpp"
-#include "image.hpp"
+#include "image.h"
 #include "commandBuffer.h"
 #include "validation.hpp"
 #include "../core/window.h"
@@ -605,7 +605,7 @@ void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 		vk::AccessFlagBits2::eColorAttachmentWrite, // dstAccessMask
 		vk::PipelineStageFlagBits2::eColorAttachmentOutput, // srcStage
 		vk::PipelineStageFlagBits2::eColorAttachmentOutput, // dstStage
-		*commandBuffer
+		commandBuffer
 	);
 	constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -648,7 +648,7 @@ void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 		{}, // dstAccessMask
 		vk::PipelineStageFlagBits2::eColorAttachmentOutput, // srcStage
 		vk::PipelineStageFlagBits2::eBottomOfPipe, // dstStage
-		*commandBuffer
+		commandBuffer
 	);
 	(*commandBuffer).end();
 }
