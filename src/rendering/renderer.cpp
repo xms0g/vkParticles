@@ -683,11 +683,12 @@ void Renderer::getPhysicalDevice() {
 		throw std::runtime_error("Failed to find GPUs with Vulkan support!");
 	}
 
-	for (auto& phyDevice: physicalDevices) {
-		if (checkDeviceSuitable(phyDevice)) {
-			mPhysicalDevice = phyDevice;
-			break;
-		}
+	const auto deviceIt = std::ranges::find_if(
+		physicalDevices, [&](const auto& phyDevice) { return checkDeviceSuitable(phyDevice); });
+
+	if (deviceIt != physicalDevices.end()) {
+		mPhysicalDevice = *deviceIt;
+
 	}
 }
 
