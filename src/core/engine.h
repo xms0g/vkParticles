@@ -13,8 +13,8 @@ public:
     void run();
 
 private:
+	std::unique_ptr<Window> mWindow;
 	std::unique_ptr<Renderer> mRenderer;
-    std::unique_ptr<Window> mWindow;
 
     double mDeltaTime{0.0};
     double mSecondsPreviousFrame{0};

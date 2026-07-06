@@ -24,20 +24,19 @@
 #include "../config/config.hpp"
 #include "../io/filesystem.h"
 
-Renderer::Renderer() = default;
+Renderer::Renderer(Window& window) : mWindow(window) {
+}
 
 Renderer::~Renderer() = default;
 
-int Renderer::init(Window* window) {
-	mWindow = window;
-
+int Renderer::init() {
 	try {
 		createInstance();
 		setupDebugMessenger();
 		createSurface();
 		getPhysicalDevice();
 		createLogicalDevice();
-		mSwapChain.create(mSurface, mDevice, mPhysicalDevice, mWindow->nativeHandle());
+		mSwapChain.create(mSurface, mDevice, mPhysicalDevice, mWindow.nativeHandle());
 		createComputeDescriptorSetLayout();
 		createGraphicsPipeline();
 		createComputePipeline();
@@ -148,9 +147,9 @@ void Renderer::render(const float deltaTime) {
 		// here and does not need to be caught by an exception.
 		if ((result == vk::Result::eSuboptimalKHR) ||
 		    (result == vk::Result::eErrorOutOfDateKHR) ||
-		    mWindow->windowResized()) {
-			mWindow->windowResized(false);
-			mSwapChain.recreate(mSurface, mDevice, mPhysicalDevice, mWindow->nativeHandle());
+		    mWindow.windowResized()) {
+			mWindow.windowResized(false);
+			mSwapChain.recreate(mSurface, mDevice, mPhysicalDevice, mWindow.nativeHandle());
 		} else {
 			// There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
 			assert(result == vk::Result::eSuccess);
@@ -245,7 +244,7 @@ void Renderer::setupDebugMessenger() {
 
 void Renderer::createSurface() {
 	VkSurfaceKHR surface;
-	if (glfwCreateWindowSurface(*mInstance, mWindow->nativeHandle(), nullptr, &surface) != 0) {
+	if (glfwCreateWindowSurface(*mInstance, mWindow.nativeHandle(), nullptr, &surface) != 0) {
 		throw std::runtime_error("Failed to create window surface!");
 	}
 

@@ -11,11 +11,11 @@ class Window;
 
 class Renderer {
 public:
-	Renderer();
+	Renderer(Window& window);
 
 	~Renderer();
 
-	int init(Window* window);
+	int init();
 
 	void render(float deltaTime);
 
@@ -82,7 +82,7 @@ private:
 		float deltaTime{1.0f};
 	};
 
-	Window* mWindow{nullptr};
+	Window& mWindow;
 
 	vk::raii::Context mContext;
 	vk::raii::Instance mInstance{nullptr};

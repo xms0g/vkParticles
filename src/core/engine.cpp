@@ -4,11 +4,11 @@
 #include "../rendering/renderer.h"
 
 Engine::Engine()
-	: mRenderer(std::make_unique<Renderer>()),
-	  mWindow(std::make_unique<Window>()) {
+	: mWindow(std::make_unique<Window>()),
+	  mRenderer(std::make_unique<Renderer>(*mWindow)) {
 	try {
 		mWindow->init("Vulkan Particles", WIDTH, HEIGHT);
-		mRenderer->init(mWindow.get());
+		mRenderer->init();
 	} catch (const std::runtime_error& e) {
 		throw std::runtime_error(e.what());
 	}
