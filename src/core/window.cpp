@@ -27,6 +27,7 @@ void Window::framebufferResizeCallback(GLFWwindow* window, int width, int height
 	myWindow->windowResized(true);
 
 	glfwGetFramebufferSize(window, &width, &height);
+
 	while (width == 0 || height == 0) {
 		glfwGetFramebufferSize(window, &width, &height);
 		glfwWaitEvents();
@@ -66,5 +67,6 @@ void Window::updateFpsCounter(const double dt) {
 		glfwSetWindowTitle(mWindow, tmp);
 		mFrameCount = 0;
 	}
+
 	mFrameCount++;
 }

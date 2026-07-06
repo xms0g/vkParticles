@@ -509,18 +509,18 @@ void Renderer::createComputeDescriptorSets() {
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 		vk::DescriptorBufferInfo bufferInfo{
-			.buffer = mUniformBuffers[i].getBuffer(),
+			.buffer = *mUniformBuffers[i],
 			.offset = 0,
 			.range = mUniformBuffers[i].getSize()
 		};
 
 		vk::DescriptorBufferInfo storageBufferInfoLastFrame{
-			.buffer = mShaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT].getBuffer(),
+			.buffer = *mShaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT],
 			.offset = 0,
 			.range = sizeof(Particle) * PARTICLE_COUNT
 		};
 		vk::DescriptorBufferInfo storageBufferInfoCurrentFrame{
-			.buffer = mShaderStorageBuffers[i].getBuffer(),
+			.buffer = *mShaderStorageBuffers[i],
 			.offset = 0,
 			.range = sizeof(Particle) * PARTICLE_COUNT
 		};
@@ -635,7 +635,7 @@ void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 			0.0f,
 			1.0f));
 	(*commandBuffer).setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), mSwapChain.extent()));
-	(*commandBuffer).bindVertexBuffers(0, {mShaderStorageBuffers[mFrameIndex].getBuffer()}, {0});
+	(*commandBuffer).bindVertexBuffers(0, {*mShaderStorageBuffers[mFrameIndex]}, {0});
 	(*commandBuffer).draw(PARTICLE_COUNT, 1, 0, 0);
 	(*commandBuffer).endRendering();
 	// After rendering, transition the swapchain image to PRESENT_SRC
@@ -766,7 +766,7 @@ bool Renderer::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 
 void Renderer::copyBuffer(const Buffer& dstBuffer, const Buffer& srcBuffer, const vk::DeviceSize size) const {
 	const vk::raii::CommandBuffer commandCopyBuffer = beginSingleTimeCommands();
-	commandCopyBuffer.copyBuffer(&*srcBuffer.getBuffer(), &*dstBuffer.getBuffer(), vk::BufferCopy(0, 0, size));
+	commandCopyBuffer.copyBuffer(*srcBuffer, *dstBuffer, vk::BufferCopy(0, 0, size));
 	endSingleTimeCommands(commandCopyBuffer);
 }
 

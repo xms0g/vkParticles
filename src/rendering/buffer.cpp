@@ -24,10 +24,6 @@ Buffer::Buffer(
 	mBuffer.bindMemory(mBufferMemory, 0);
 }
 
-vk::Buffer Buffer::getBuffer() const {
-	return mBuffer;
-}
-
 vk::DeviceSize Buffer::getSize() const {
 	return mSize;
 }

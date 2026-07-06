@@ -12,8 +12,6 @@ public:
 		vk::MemoryPropertyFlags properties);
 
 	[[nodiscard]]
-	vk::Buffer getBuffer() const;
-
 	vk::DeviceSize getSize() const;
 
 	[[nodiscard]]
@@ -23,6 +21,9 @@ public:
 	void* map(size_t size);
 
 	void unmap() const;
+
+	vk::raii::Buffer& operator*() noexcept { return mBuffer; }
+	const vk::raii::Buffer& operator*() const noexcept { return mBuffer; }
 
 private:
 	vk::DeviceSize mSize;
