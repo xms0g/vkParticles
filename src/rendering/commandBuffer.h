@@ -7,7 +7,7 @@ class CommandPool;
 
 class CommandBuffer {
 public:
-	CommandBuffer(const vk::raii::Device& device, const CommandPool& commandPool);
+	CommandBuffer(const vk::raii::Device& device, const CommandPool& commandPool, vk::CommandBufferLevel level);
 
 	vk::raii::CommandBuffer& operator*() noexcept { return mCommandBuffer; }
 	const vk::raii::CommandBuffer& operator*() const noexcept { return mCommandBuffer; }

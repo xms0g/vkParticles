@@ -1,10 +1,10 @@
 #include "commandBuffer.h"
 #include "commandPool.h"
 
-CommandBuffer::CommandBuffer(const vk::raii::Device& device, const CommandPool& commandPool) {
+CommandBuffer::CommandBuffer(const vk::raii::Device& device, const CommandPool& commandPool, const vk::CommandBufferLevel level) {
 	const vk::CommandBufferAllocateInfo allocInfo{
 		.commandPool = **commandPool,
-		.level = vk::CommandBufferLevel::ePrimary,
+		.level = level,
 		.commandBufferCount = 1
 	};
 

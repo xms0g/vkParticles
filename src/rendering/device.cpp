@@ -583,8 +583,8 @@ void Device::createCommandBuffers() {
 	mComputeCommandBuffers.clear();
 
 	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		mGraphicsCommandBuffers.emplace_back(mDevice, *mCommandPool);
-		mComputeCommandBuffers.emplace_back(mDevice, *mCommandPool);
+		mGraphicsCommandBuffers.emplace_back(mDevice, *mCommandPool, vk::CommandBufferLevel::ePrimary);
+		mComputeCommandBuffers.emplace_back(mDevice, *mCommandPool, vk::CommandBufferLevel::ePrimary);
 	}
 }
 
