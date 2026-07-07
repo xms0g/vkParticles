@@ -108,8 +108,7 @@ void Device::presentFrame() {
 	result = mQueue.presentKHR(presentInfo);
 	// Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
 	// here and does not need to be caught by an exception.
-	if ((result == vk::Result::eSuboptimalKHR) || (result == vk::Result::eErrorOutOfDateKHR) || mWindow.
-	    windowResized()) {
+	if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR || mWindow.windowResized()) {
 		mWindow.windowResized(false);
 		mSwapChain->recreate(mSurface, mDevice, mPhysicalDevice, *mWindow);
 	} else {
@@ -543,7 +542,7 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	(*commandBuffer).reset();
 	(*commandBuffer).begin({});
 
-	const auto image = mSwapChain->images()[imageIndex];
+	const auto& image = mSwapChain->image(imageIndex);
 	// Before starting rendering, transition the swapchain image to COLOR_ATTACHMENT_OPTIMAL
 	Image::transitionImageLayout(
 		image,
@@ -555,10 +554,11 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 		vk::PipelineStageFlagBits2::eColorAttachmentOutput, // dstStage
 		commandBuffer
 	);
+
 	constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
 	vk::RenderingAttachmentInfo attachmentInfo = {
-		.imageView = mSwapChain->imageViews()[imageIndex],
+		.imageView = mSwapChain->imageView(imageIndex),
 		.imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
 		.loadOp = vk::AttachmentLoadOp::eClear,
 		.storeOp = vk::AttachmentStoreOp::eStore,

@@ -12,12 +12,12 @@ vk::SurfaceFormatKHR& Swapchain::surfaceFormat() {
 	return mSwapChainSurfaceFormat;
 }
 
-std::vector<vk::Image>& Swapchain::images() {
-	return mSwapChainImages;
+vk::Image& Swapchain::image(const uint32_t imageIndex) {
+	return mSwapChainImages[imageIndex];
 }
 
-std::vector<vk::raii::ImageView>& Swapchain::imageViews() {
-	return mSwapChainImageViews;
+vk::raii::ImageView& Swapchain::imageView(const uint32_t imageIndex) {
+	return mSwapChainImageViews[imageIndex];
 }
 
 vk::Extent2D& Swapchain::extent() {

@@ -13,9 +13,9 @@ public:
 
 	vk::SurfaceFormatKHR& surfaceFormat();
 
-	std::vector<vk::Image>& images();
+	vk::Image& image(uint32_t imageIndex);
 
-	std::vector<vk::raii::ImageView>& imageViews();
+	vk::raii::ImageView& imageView(uint32_t imageIndex);
 
 	vk::Extent2D& extent();
 
