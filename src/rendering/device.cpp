@@ -20,7 +20,6 @@
 #include "descriptorPool.h"
 #include "deviceExtension.hpp"
 #include "image.h"
-#include "commandBuffer.h"
 #include "validation.hpp"
 #include "../core/window.h"
 #include "../config/config.hpp"
@@ -82,59 +81,6 @@ void Device::prepareFrame(const float deltaTime) {
 	mGraphicsSignalValue = ++mTimelineValue;
 
 	updateUniformBuffer(mFrameIndex, deltaTime);
-}
-
-void Device::submitComputeWork() {
-	recordComputeCommandBuffer();
-	// Submit compute work
-	vk::TimelineSemaphoreSubmitInfo computeTimelineInfo{
-		.waitSemaphoreValueCount = 1,
-		.pWaitSemaphoreValues = &mComputeWaitValue,
-		.signalSemaphoreValueCount = 1,
-		.pSignalSemaphoreValues = &mComputeSignalValue
-	};
-
-	vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eComputeShader};
-
-	const vk::SubmitInfo computeSubmitInfo{
-		.pNext = &computeTimelineInfo,
-		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &*mSemaphore,
-		.pWaitDstStageMask = waitStages,
-		.commandBufferCount = 1,
-		.pCommandBuffers = &**mComputeCommandBuffers[mFrameIndex],
-		.signalSemaphoreCount = 1,
-		.pSignalSemaphores = &*mSemaphore
-	};
-
-	mQueue.submit(computeSubmitInfo, nullptr);
-}
-
-void Device::submitGraphicsWork() {
-	// Record graphics command buffer
-	recordGraphicsCommandBuffer(mImageIndex);
-
-	// Submit graphics work (waits for compute to finish)
-	vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eVertexInput;
-	vk::TimelineSemaphoreSubmitInfo graphicsTimelineInfo{
-		.waitSemaphoreValueCount = 1,
-		.pWaitSemaphoreValues = &mGraphicsWaitValue,
-		.signalSemaphoreValueCount = 1,
-		.pSignalSemaphoreValues = &mGraphicsSignalValue
-	};
-
-	const vk::SubmitInfo graphicsSubmitInfo{
-		.pNext = &graphicsTimelineInfo,
-		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &*mSemaphore,
-		.pWaitDstStageMask = &waitStage,
-		.commandBufferCount = 1,
-		.pCommandBuffers = &**mGraphicsCommandBuffers[mFrameIndex],
-		.signalSemaphoreCount = 1,
-		.pSignalSemaphores = &*mSemaphore
-	};
-
-	mQueue.submit(graphicsSubmitInfo, nullptr);
 }
 
 void Device::presentFrame() {

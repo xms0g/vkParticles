@@ -27,8 +27,8 @@ void Engine::run() {
 		mWindow->updateFpsCounter(mDeltaTime);
 
 		mDevice->prepareFrame(mDeltaTime);
-		mDevice->submitComputeWork();
-		mDevice->submitGraphicsWork();
+		mDevice->submit<QueueType::Compute>();
+		mDevice->submit<QueueType::Graphics>();
 		mDevice->presentFrame();
 	}
 	mDevice->waitIdle();
