@@ -1,10 +1,10 @@
 #pragma once
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan_raii.hpp>
-#include "swapchain.h"
-#include "commandPool.h"
-#include "descriptorPool.h"
 
+class CommandPool;
+class DescriptorPool;
+class Swapchain;
 class Window;
 class CommandBuffer;
 class Buffer;
@@ -92,9 +92,9 @@ private:
 	vk::raii::Queue mQueue{nullptr};
 	uint32_t mQueueIndex{static_cast<uint32_t>(~0)};
 	vk::raii::SurfaceKHR mSurface{nullptr};
-	Swapchain mSwapChain;
+	std::unique_ptr<Swapchain> mSwapChain;
 	vk::raii::DescriptorSetLayout mComputeDescriptorSetLayout{nullptr};
-	DescriptorPool mDescriptorPool;
+	std::unique_ptr<DescriptorPool> mDescriptorPool;
 	std::vector<vk::raii::DescriptorSet> mComputeDescriptorSets;
 	vk::raii::PipelineLayout mGraphicsPipelineLayout{nullptr};
 	vk::raii::PipelineLayout mComputePipelineLayout{nullptr};
@@ -102,7 +102,7 @@ private:
 	vk::raii::Pipeline mComputePipeline{nullptr};
 	std::vector<Buffer> mUniformBuffers;
 	std::vector<Buffer> mShaderStorageBuffers;
-	CommandPool mCommandPool;
+	std::unique_ptr<CommandPool> mCommandPool;
 	std::vector<CommandBuffer> mGraphicsCommandBuffers;
 	std::vector<CommandBuffer> mComputeCommandBuffers;
 	vk::raii::Semaphore mSemaphore{nullptr};

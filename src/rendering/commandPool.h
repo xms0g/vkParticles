@@ -5,9 +5,7 @@
 
 class CommandPool {
 public:
-	CommandPool() = default;
-
-	void create(const vk::raii::Device& device, uint32_t queueIndex);
+	CommandPool(const vk::raii::Device& device, const uint32_t queueIndex);
 
 	vk::raii::CommandPool& operator*() noexcept { return mCommandPool; }
 	const vk::raii::CommandPool& operator*() const noexcept { return mCommandPool; }

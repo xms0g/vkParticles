@@ -9,14 +9,13 @@ struct DescriptorBinding {
 
 class DescriptorPool {
 public:
-	DescriptorPool() = default;
-
-	void create(
+	DescriptorPool(
 		const vk::raii::Device& device,
 		uint32_t poolSizeCount,
 		uint32_t maxSets,
 		vk::DescriptorPoolCreateFlagBits poolFlags,
 		std::span<DescriptorBinding> bindings);
+
 
 	vk::raii::DescriptorPool& operator*() noexcept { return mDescriptorPool; }
 	const vk::raii::DescriptorPool& operator*() const noexcept { return mDescriptorPool; }

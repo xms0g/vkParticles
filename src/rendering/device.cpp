@@ -16,6 +16,8 @@
 #include "particle.hpp"
 #include "buffer.h"
 #include "swapchain.h"
+#include "commandPool.h"
+#include "descriptorPool.h"
 #include "deviceExtension.hpp"
 #include "image.h"
 #include "commandBuffer.h"
@@ -36,11 +38,11 @@ void Device::init() {
 		createSurface();
 		getPhysicalDevice();
 		createLogicalDevice();
-		mSwapChain.create(mSurface, mDevice, mPhysicalDevice, *mWindow);
+		mSwapChain = std::make_unique<Swapchain>(mSurface, mDevice, mPhysicalDevice, *mWindow);
 		createComputeDescriptorSetLayout();
 		createGraphicsPipeline();
 		createComputePipeline();
-		mCommandPool.create(mDevice, mQueueIndex);
+		mCommandPool = std::make_unique<CommandPool>(mDevice, mQueueIndex);
 		createShaderStorageBuffers();
 		createUniformBuffers();
 
@@ -49,11 +51,12 @@ void Device::init() {
 			{vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2}
 		};
 
-		mDescriptorPool.create(mDevice,
-							   2,
-							   MAX_FRAMES_IN_FLIGHT,
-							   vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-							   bindings);
+		mDescriptorPool = std::make_unique<DescriptorPool>(
+			mDevice,
+			2,
+			MAX_FRAMES_IN_FLIGHT,
+			vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+			bindings);
 
 		createComputeDescriptorSets();
 		createCommandBuffers();
@@ -64,7 +67,7 @@ void Device::init() {
 }
 
 void Device::prepareFrame(const float deltaTime) {
-	mImageIndex = mSwapChain.acquireNextImage(mFences[mFrameIndex]);
+	mImageIndex = mSwapChain->acquireNextImage(mFences[mFrameIndex]);
 
 	auto fenceResult = mDevice.waitForFences(*mFences[mFrameIndex], vk::True, UINT64_MAX);
 	if (fenceResult != vk::Result::eSuccess) {
@@ -150,7 +153,7 @@ void Device::submitGraphicsWork() {
 		.waitSemaphoreCount = 0, // No binary semaphores needed
 		.pWaitSemaphores = nullptr,
 		.swapchainCount = 1,
-		.pSwapchains = &**mSwapChain,
+		.pSwapchains = &***mSwapChain,
 		.pImageIndices = &mImageIndex
 	};
 
@@ -161,7 +164,7 @@ void Device::submitGraphicsWork() {
 	    (result == vk::Result::eErrorOutOfDateKHR) ||
 	    mWindow.windowResized()) {
 		mWindow.windowResized(false);
-		mSwapChain.recreate(mSurface, mDevice, mPhysicalDevice, *mWindow);
+		mSwapChain->recreate(mSurface, mDevice, mPhysicalDevice, *mWindow);
 	} else {
 		// There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
 		assert(result == vk::Result::eSuccess);
@@ -407,7 +410,7 @@ void Device::createGraphicsPipeline() {
 		},
 		{
 			.colorAttachmentCount = 1,
-			.pColorAttachmentFormats = &mSwapChain.surfaceFormat().format,
+			.pColorAttachmentFormats = &mSwapChain->surfaceFormat().format,
 		}
 	};
 
@@ -495,7 +498,7 @@ void Device::createShaderStorageBuffers() {
 void Device::createComputeDescriptorSets() {
 	std::vector<vk::DescriptorSetLayout> layouts{MAX_FRAMES_IN_FLIGHT, *mComputeDescriptorSetLayout};
 	const vk::DescriptorSetAllocateInfo allocInfo{
-		.descriptorPool = *mDescriptorPool,
+		.descriptorPool = **mDescriptorPool,
 		.descriptorSetCount = static_cast<uint32_t>(layouts.size()),
 		.pSetLayouts = layouts.data()
 	};
@@ -580,8 +583,8 @@ void Device::createCommandBuffers() {
 	mComputeCommandBuffers.clear();
 
 	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		mGraphicsCommandBuffers.emplace_back(mDevice, mCommandPool);
-		mComputeCommandBuffers.emplace_back(mDevice, mCommandPool);
+		mGraphicsCommandBuffers.emplace_back(mDevice, *mCommandPool);
+		mComputeCommandBuffers.emplace_back(mDevice, *mCommandPool);
 	}
 }
 
@@ -590,7 +593,7 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	(*commandBuffer).reset();
 	(*commandBuffer).begin({});
 
-	const auto image = mSwapChain.images()[imageIndex];
+	const auto image = mSwapChain->images()[imageIndex];
 	// Before starting rendering, transition the swapchain image to COLOR_ATTACHMENT_OPTIMAL
 	Image::transitionImageLayout(
 		image,
@@ -605,7 +608,7 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
 	vk::RenderingAttachmentInfo attachmentInfo = {
-		.imageView = mSwapChain.imageViews()[imageIndex],
+		.imageView = mSwapChain->imageViews()[imageIndex],
 		.imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
 		.loadOp = vk::AttachmentLoadOp::eClear,
 		.storeOp = vk::AttachmentStoreOp::eStore,
@@ -613,7 +616,7 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	};
 
 	const vk::RenderingInfo renderingInfo = {
-		.renderArea = {.offset = {0, 0}, .extent = mSwapChain.extent()},
+		.renderArea = {.offset = {0, 0}, .extent = mSwapChain->extent()},
 		.layerCount = 1,
 		.colorAttachmentCount = 1,
 		.pColorAttachments = &attachmentInfo
@@ -626,11 +629,11 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 		vk::Viewport(
 			0.0f,
 			0.0f,
-			static_cast<float>(mSwapChain.extent().width),
-			static_cast<float>(mSwapChain.extent().height),
+			static_cast<float>(mSwapChain->extent().width),
+			static_cast<float>(mSwapChain->extent().height),
 			0.0f,
 			1.0f));
-	(*commandBuffer).setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), mSwapChain.extent()));
+	(*commandBuffer).setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), mSwapChain->extent()));
 	(*commandBuffer).bindVertexBuffers(0, {*mShaderStorageBuffers[mFrameIndex]}, {0});
 	(*commandBuffer).draw(PARTICLE_COUNT, 1, 0, 0);
 	(*commandBuffer).endRendering();

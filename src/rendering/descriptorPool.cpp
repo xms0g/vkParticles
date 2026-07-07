@@ -1,10 +1,10 @@
 #include "descriptorPool.h"
 
-void DescriptorPool::create(
+DescriptorPool::DescriptorPool(
 	const vk::raii::Device& device,
 	const uint32_t poolSizeCount,
 	const uint32_t maxSets,
-	const vk::DescriptorPoolCreateFlagBits poolFlags,
+	vk::DescriptorPoolCreateFlagBits poolFlags,
 	std::span<DescriptorBinding> bindings) {
 	std::vector<vk::DescriptorPoolSize> poolSizes;
 	poolSizes.reserve(poolSizeCount);

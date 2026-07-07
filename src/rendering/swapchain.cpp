@@ -1,5 +1,13 @@
 #include "swapchain.h"
 
+Swapchain::Swapchain(
+	const vk::raii::SurfaceKHR& surface,
+	const vk::raii::Device& device,
+	const vk::raii::PhysicalDevice& phyDev,
+	GLFWwindow& window) {
+	create(surface, device, phyDev, window);
+}
+
 vk::SurfaceFormatKHR& Swapchain::surfaceFormat() {
 	return mSwapChainSurfaceFormat;
 }
@@ -23,6 +31,20 @@ uint32_t Swapchain::acquireNextImage(const vk::raii::Fence& fence) const {
 	}
 
 	return imageIndex;
+}
+
+void Swapchain::recreate(
+	const vk::raii::SurfaceKHR& surface,
+	const vk::raii::Device& device,
+	const vk::raii::PhysicalDevice& phyDev,
+	GLFWwindow& window) {
+	device.waitIdle();
+
+	mSwapChainImageViews.clear();
+	mSwapChain = nullptr;
+
+	create(surface, device, phyDev, window);
+	createSwapchainImageViews(device);
 }
 
 void Swapchain::create(
@@ -61,20 +83,6 @@ void Swapchain::create(
 	mSwapChain = vk::raii::SwapchainKHR(device, swapChainCreateInfo);
 	mSwapChainImages = mSwapChain.getImages();
 
-	createSwapchainImageViews(device);
-}
-
-void Swapchain::recreate(
-	const vk::raii::SurfaceKHR& surface,
-	const vk::raii::Device& device,
-	const vk::raii::PhysicalDevice& phyDev,
-	GLFWwindow& window) {
-	device.waitIdle();
-
-	mSwapChainImageViews.clear();
-	mSwapChain = nullptr;
-
-	create(surface, device, phyDev, window);
 	createSwapchainImageViews(device);
 }
 
