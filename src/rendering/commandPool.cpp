@@ -1,8 +1,8 @@
 #include "commandPool.h"
 
-CommandPool::CommandPool(const vk::raii::Device& device, const uint32_t queueIndex) {
+CommandPool::CommandPool(const vk::raii::Device& device, const uint32_t queueIndex, const vk::CommandPoolCreateFlags flags) {
 	const vk::CommandPoolCreateInfo poolInfo{
-		.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+		.flags = flags,
 		.queueFamilyIndex = queueIndex
 	};
 

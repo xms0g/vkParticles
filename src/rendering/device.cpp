@@ -42,21 +42,21 @@ void Device::init() {
 		createComputeDescriptorSetLayout();
 		createGraphicsPipeline();
 		createComputePipeline();
-		mCommandPool = std::make_unique<CommandPool>(mDevice, mQueueIndex);
+
+		mCommandPool = std::make_unique<CommandPool>(
+			mDevice,
+			mQueueIndex,
+			vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+
 		createShaderStorageBuffers();
 		createUniformBuffers();
 
-		DescriptorBinding bindings[] = {
-			{vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT},
-			{vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2}
-		};
-
-		mDescriptorPool = std::make_unique<DescriptorPool>(
-			mDevice,
-			2,
-			MAX_FRAMES_IN_FLIGHT,
-			vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-			bindings);
+		mDescriptorPool = std::make_unique<DescriptorPool>(mDevice);
+		mDescriptorPool->addMaxSets(MAX_FRAMES_IN_FLIGHT).
+				addPoolFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet).
+				addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT).
+				addPoolSize(vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2).
+				build();
 
 		createComputeDescriptorSets();
 		createCommandBuffers();
