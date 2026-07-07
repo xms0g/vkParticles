@@ -4,6 +4,7 @@
 #include <vulkan/vulkan_raii.hpp>
 #include "swapchain.h"
 #include "commandPool.h"
+#include "descriptorPool.h"
 
 class CommandBuffer;
 class Buffer;
@@ -37,8 +38,6 @@ private:
 	void createUniformBuffers();
 
 	void createShaderStorageBuffers();
-
-	void createDescriptorPool();
 
 	void createComputeDescriptorSets();
 
@@ -93,7 +92,7 @@ private:
 	vk::raii::SurfaceKHR mSurface{nullptr};
 	Swapchain mSwapChain;
 	vk::raii::DescriptorSetLayout mComputeDescriptorSetLayout{nullptr};
-	vk::raii::DescriptorPool mDescriptorPool{nullptr};
+	DescriptorPool mDescriptorPool;
 	std::vector<vk::raii::DescriptorSet> mComputeDescriptorSets;
 	vk::raii::PipelineLayout mGraphicsPipelineLayout{nullptr};
 	vk::raii::PipelineLayout mComputePipelineLayout{nullptr};

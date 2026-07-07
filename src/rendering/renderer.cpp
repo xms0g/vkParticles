@@ -43,7 +43,17 @@ int Renderer::init() {
 		mCommandPool.create(mDevice, mQueueIndex);
 		createShaderStorageBuffers();
 		createUniformBuffers();
-		createDescriptorPool();
+
+		DescriptorBinding bindings[] = {
+			{vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT},
+			{vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2}};
+
+		mDescriptorPool.create(mDevice,
+			2,
+			MAX_FRAMES_IN_FLIGHT,
+			vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+			bindings);
+
 		createComputeDescriptorSets();
 		createCommandBuffers();
 		createSyncObjects();
@@ -480,26 +490,10 @@ void Renderer::createShaderStorageBuffers() {
 	}
 }
 
-void Renderer::createDescriptorPool() {
-	constexpr std::array<vk::DescriptorPoolSize, 2> poolSizes = {
-		vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT},
-		vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2}
-	};
-
-	const vk::DescriptorPoolCreateInfo poolInfo{
-		.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-		.maxSets = MAX_FRAMES_IN_FLIGHT,
-		.poolSizeCount = poolSizes.size(),
-		.pPoolSizes = poolSizes.data()
-	};
-
-	mDescriptorPool = vk::raii::DescriptorPool(mDevice, poolInfo);
-}
-
 void Renderer::createComputeDescriptorSets() {
 	std::vector<vk::DescriptorSetLayout> layouts{MAX_FRAMES_IN_FLIGHT, *mComputeDescriptorSetLayout};
 	const vk::DescriptorSetAllocateInfo allocInfo{
-		.descriptorPool = mDescriptorPool,
+		.descriptorPool = *mDescriptorPool,
 		.descriptorSetCount = static_cast<uint32_t>(layouts.size()),
 		.pSetLayouts = layouts.data()
 	};
@@ -753,8 +747,7 @@ bool Renderer::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 	bool supportsShaderDrawParameters = features2.get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters;
 	bool supportsDynamicRendering = features2.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering;
 	bool supportsSynchronization2 = features2.get<vk::PhysicalDeviceVulkan13Features>().synchronization2;
-	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().
-			extendedDynamicState;
+	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
 	bool supportsRequiredFeatures =
 			supportsSamplerAnisotropy &&
 			supportsShaderDrawParameters &&
