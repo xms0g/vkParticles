@@ -24,11 +24,11 @@ Buffer::Buffer(
 	mBuffer.bindMemory(mBufferMemory, 0);
 }
 
-vk::DeviceSize Buffer::getSize() const {
+vk::DeviceSize Buffer::size() const {
 	return mSize;
 }
 
-void* Buffer::getMapped() const {
+void* Buffer::mappedMemory() const {
 	return mMappedMemory;
 }
 

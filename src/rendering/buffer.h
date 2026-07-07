@@ -12,10 +12,10 @@ public:
 		vk::MemoryPropertyFlags properties);
 
 	[[nodiscard]]
-	vk::DeviceSize getSize() const;
+	vk::DeviceSize size() const;
 
 	[[nodiscard]]
-	void* getMapped() const;
+	void* mappedMemory() const;
 
 	[[nodiscard]]
 	void* map(size_t size);

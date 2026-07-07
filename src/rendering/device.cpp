@@ -458,7 +458,7 @@ void Device::createComputeDescriptorSets() {
 		vk::DescriptorBufferInfo bufferInfo{
 			.buffer = *mUniformBuffers[i],
 			.offset = 0,
-			.range = mUniformBuffers[i].getSize()
+			.range = mUniformBuffers[i].size()
 		};
 
 		vk::DescriptorBufferInfo storageBufferInfoLastFrame{
@@ -721,7 +721,7 @@ void Device::updateUniformBuffer(const uint32_t currentImage, const float deltaT
 	UniformBufferObject ubo{};
 	ubo.deltaTime = static_cast<float>(deltaTime) * 2.0f;
 
-	memcpy(mUniformBuffers[currentImage].getMapped(), &ubo, sizeof(ubo));
+	memcpy(mUniformBuffers[currentImage].mappedMemory(), &ubo, sizeof(ubo));
 }
 
 vk::raii::ShaderModule Device::createShaderModule(const std::vector<char>& code) const {
