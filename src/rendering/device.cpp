@@ -108,15 +108,14 @@ void Device::presentFrame() {
 	result = mQueue.presentKHR(presentInfo);
 	// Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
 	// here and does not need to be caught by an exception.
-	if ((result == vk::Result::eSuboptimalKHR) ||
-		(result == vk::Result::eErrorOutOfDateKHR) ||
-		mWindow.windowResized()) {
+	if ((result == vk::Result::eSuboptimalKHR) || (result == vk::Result::eErrorOutOfDateKHR) || mWindow.
+	    windowResized()) {
 		mWindow.windowResized(false);
 		mSwapChain->recreate(mSurface, mDevice, mPhysicalDevice, *mWindow);
-		} else {
-			// There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
-			assert(result == vk::Result::eSuccess);
-		}
+	} else {
+		// There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
+		assert(result == vk::Result::eSuccess);
+	}
 
 	mFrameIndex = (mFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -215,7 +214,7 @@ void Device::createSurface() {
 }
 
 void Device::createLogicalDevice() {
-	std::vector<vk::QueueFamilyProperties> queueFamilyProperties = mPhysicalDevice.getQueueFamilyProperties();
+	const std::vector<vk::QueueFamilyProperties> queueFamilyProperties = mPhysicalDevice.getQueueFamilyProperties();
 
 	for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {
 		if (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics &&
@@ -231,7 +230,7 @@ void Device::createLogicalDevice() {
 	}
 
 	// Create a chain of feature structures
-	vk::StructureChain<
+	const vk::StructureChain<
 		vk::PhysicalDeviceFeatures2,
 		vk::PhysicalDeviceVulkan13Features,
 		vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT,
@@ -243,13 +242,13 @@ void Device::createLogicalDevice() {
 	};
 
 	float queuePriority = 0.5f;
-	vk::DeviceQueueCreateInfo deviceQueueCreateInfo{
+	const vk::DeviceQueueCreateInfo deviceQueueCreateInfo{
 		.queueFamilyIndex = mQueueIndex,
 		.queueCount = 1,
 		.pQueuePriorities = &queuePriority
 	};
 
-	vk::DeviceCreateInfo deviceCreateInfo{
+	const vk::DeviceCreateInfo deviceCreateInfo{
 		.pNext = &featureChain.get<vk::PhysicalDeviceFeatures2>(),
 		.queueCreateInfoCount = 1,
 		.pQueueCreateInfos = &deviceQueueCreateInfo,
@@ -277,26 +276,26 @@ void Device::createGraphicsPipeline() {
 		.pName = "fragMain"
 	};
 
-	vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+	const vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
 	auto bindingDescription = Particle::getBindingDescription();
 	auto attributeDescriptions = Particle::getAttributeDescriptions();
 
-	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{
+	const vk::PipelineVertexInputStateCreateInfo vertexInputInfo{
 		.vertexBindingDescriptionCount = 1,
 		.pVertexBindingDescriptions = &bindingDescription,
 		.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
 		.pVertexAttributeDescriptions = attributeDescriptions.data()
 	};
 
-	vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
+	constexpr vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
 		.topology = vk::PrimitiveTopology::ePointList,
 		.primitiveRestartEnable = vk::False
 	};
 
-	vk::PipelineViewportStateCreateInfo viewportState{.viewportCount = 1, .scissorCount = 1};
+	constexpr vk::PipelineViewportStateCreateInfo viewportState{.viewportCount = 1, .scissorCount = 1};
 
-	vk::PipelineRasterizationStateCreateInfo rasterizer{
+	constexpr vk::PipelineRasterizationStateCreateInfo rasterizer{
 		.depthClampEnable = vk::False,
 		.rasterizerDiscardEnable = vk::False,
 		.polygonMode = vk::PolygonMode::eFill,
@@ -306,12 +305,12 @@ void Device::createGraphicsPipeline() {
 		.lineWidth = 1.0f
 	};
 
-	vk::PipelineMultisampleStateCreateInfo multisampling{
+	constexpr vk::PipelineMultisampleStateCreateInfo multisampling{
 		.rasterizationSamples = vk::SampleCountFlagBits::e1,
 		.sampleShadingEnable = vk::False
 	};
 
-	vk::PipelineColorBlendAttachmentState colorBlendAttachment{
+	constexpr vk::PipelineColorBlendAttachmentState colorBlendAttachment{
 		.blendEnable = vk::True,
 		.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
 		.dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
@@ -323,16 +322,16 @@ void Device::createGraphicsPipeline() {
 		                  vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
 	};
 
-	vk::PipelineColorBlendStateCreateInfo colorBlending{
+	const vk::PipelineColorBlendStateCreateInfo colorBlending{
 		.logicOpEnable = vk::False,
 		.logicOp = vk::LogicOp::eCopy,
 		.attachmentCount = 1,
 		.pAttachments = &colorBlendAttachment
 	};
 
-	std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+	constexpr std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 
-	vk::PipelineDynamicStateCreateInfo dynamicState{
+	const vk::PipelineDynamicStateCreateInfo dynamicState{
 		.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
 		.pDynamicStates = dynamicStates.data()
 	};
@@ -340,7 +339,7 @@ void Device::createGraphicsPipeline() {
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
 	mGraphicsPipelineLayout = vk::raii::PipelineLayout(mDevice, pipelineLayoutInfo);
 
-	vk::StructureChain<
+	const vk::StructureChain<
 		vk::GraphicsPipelineCreateInfo,
 		vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain = {
 		{
@@ -378,16 +377,19 @@ void Device::createComputePipeline() {
 		.module = shaderModule,
 		.pName = "compMain"
 	};
+
 	const vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
 		.setLayoutCount = 1,
 		.pSetLayouts = &*mComputeDescriptorSetLayout
 	};
+
 	mComputePipelineLayout = vk::raii::PipelineLayout(mDevice, pipelineLayoutInfo);
 
 	const vk::ComputePipelineCreateInfo pipelineInfo{
 		.stage = computeShaderStageInfo,
 		.layout = *mComputePipelineLayout
 	};
+
 	mComputePipeline = vk::raii::Pipeline(mDevice, nullptr, pipelineInfo);
 }
 
@@ -444,7 +446,7 @@ void Device::createShaderStorageBuffers() {
 }
 
 void Device::createComputeDescriptorSets() {
-	std::vector<vk::DescriptorSetLayout> layouts{MAX_FRAMES_IN_FLIGHT, *mComputeDescriptorSetLayout};
+	const std::vector<vk::DescriptorSetLayout> layouts{MAX_FRAMES_IN_FLIGHT, *mComputeDescriptorSetLayout};
 	const vk::DescriptorSetAllocateInfo allocInfo{
 		.descriptorPool = **mDescriptorPool,
 		.descriptorSetCount = static_cast<uint32_t>(layouts.size()),
@@ -509,7 +511,7 @@ void Device::createComputeDescriptorSets() {
 }
 
 void Device::createComputeDescriptorSetLayout() {
-	std::array<vk::DescriptorSetLayoutBinding, 3> layoutBindings{
+	constexpr std::array<vk::DescriptorSetLayoutBinding, 3> layoutBindings{
 		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eCompute,
 		                               nullptr),
 		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute,
@@ -613,7 +615,7 @@ void Device::recordComputeCommandBuffer() {
 void Device::createSyncObjects() {
 	mFences.clear();
 
-	vk::SemaphoreTypeCreateInfo semaphoreType{.semaphoreType = vk::SemaphoreType::eTimeline, .initialValue = 0};
+	constexpr vk::SemaphoreTypeCreateInfo semaphoreType{.semaphoreType = vk::SemaphoreType::eTimeline, .initialValue = 0};
 	mSemaphore = vk::raii::Semaphore(mDevice, {.pNext = &semaphoreType});
 	mTimelineValue = 0;
 
