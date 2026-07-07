@@ -1,14 +1,14 @@
 #include "engine.h"
 #include "window.h"
 #include "../config/config.hpp"
-#include "../rendering/renderer.h"
+#include "../rendering/device.h"
 
 Engine::Engine()
 	: mWindow(std::make_unique<Window>()),
-	  mRenderer(std::make_unique<Renderer>(*mWindow)) {
+	  mDevice(std::make_unique<Device>(*mWindow)) {
 	try {
 		mWindow->init("Vulkan Particles", WIDTH, HEIGHT);
-		mRenderer->init();
+		mDevice->init();
 	} catch (const std::runtime_error& e) {
 		throw std::runtime_error(e.what());
 	}
@@ -25,7 +25,10 @@ void Engine::run() {
 		mSecondsPreviousFrame = currentTime;
 
 		mWindow->updateFpsCounter(mDeltaTime);
-		mRenderer->render(mDeltaTime);
+
+		mDevice->prepareFrame(mDeltaTime);
+		mDevice->submitComputeWork();
+		mDevice->submitGraphicsWork();
 	}
-	mRenderer->waitIdle();
+	mDevice->waitIdle();
 }

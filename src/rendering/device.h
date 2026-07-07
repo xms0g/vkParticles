@@ -1,24 +1,27 @@
 #pragma once
-#include <cstdint>
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan_raii.hpp>
 #include "swapchain.h"
 #include "commandPool.h"
 #include "descriptorPool.h"
 
+class Window;
 class CommandBuffer;
 class Buffer;
-class Window;
 
-class Renderer {
+class Device {
 public:
-	explicit Renderer(Window& window);
+	explicit Device(Window& window);
 
-	~Renderer();
+	~Device();
 
-	int init();
+	void init();
 
-	void render(float deltaTime);
+	void prepareFrame(float deltaTime);
+
+	void submitComputeWork();
+
+	void submitGraphicsWork();
 
 	void waitIdle() const;
 
@@ -82,7 +85,6 @@ private:
 	};
 
 	Window& mWindow;
-
 	vk::raii::Context mContext;
 	vk::raii::Instance mInstance{nullptr};
 	vk::raii::PhysicalDevice mPhysicalDevice{nullptr};
@@ -104,7 +106,12 @@ private:
 	std::vector<CommandBuffer> mGraphicsCommandBuffers;
 	std::vector<CommandBuffer> mComputeCommandBuffers;
 	vk::raii::Semaphore mSemaphore{nullptr};
+	uint32_t mImageIndex{0};
 	uint64_t mTimelineValue{0};
+	uint64_t mComputeWaitValue{0};
+	uint64_t mComputeSignalValue{0};
+	uint64_t mGraphicsWaitValue{0};
+	uint64_t mGraphicsSignalValue{0};
 	uint32_t mFrameIndex{0};
 	std::vector<vk::raii::Fence> mFences;
 	vk::raii::DebugUtilsMessengerEXT mDebugMessenger{nullptr};

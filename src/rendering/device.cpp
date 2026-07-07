@@ -1,4 +1,4 @@
-#include "renderer.h"
+#include "device.h"
 #include <cstring>
 #include <set>
 #include <algorithm>
@@ -24,12 +24,12 @@
 #include "../config/config.hpp"
 #include "../io/filesystem.h"
 
-Renderer::Renderer(Window& window) : mWindow(window) {
+Device::Device(Window& window) : mWindow(window) {
 }
 
-Renderer::~Renderer() = default;
+Device::~Device() = default;
 
-int Renderer::init() {
+void Device::init() {
 	try {
 		createInstance();
 		setupDebugMessenger();
@@ -46,13 +46,14 @@ int Renderer::init() {
 
 		DescriptorBinding bindings[] = {
 			{vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT},
-			{vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2}};
+			{vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2}
+		};
 
 		mDescriptorPool.create(mDevice,
-			2,
-			MAX_FRAMES_IN_FLIGHT,
-			vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-			bindings);
+							   2,
+							   MAX_FRAMES_IN_FLIGHT,
+							   vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+							   bindings);
 
 		createComputeDescriptorSets();
 		createCommandBuffers();
@@ -60,11 +61,10 @@ int Renderer::init() {
 	} catch (const std::runtime_error& e) {
 		throw std::runtime_error(e.what());
 	}
-	return 0;
 }
 
-void Renderer::render(const float deltaTime) {
-	uint32_t imageIndex = mSwapChain.acquireNextImage(mFences[mFrameIndex]);
+void Device::prepareFrame(const float deltaTime) {
+	mImageIndex = mSwapChain.acquireNextImage(mFences[mFrameIndex]);
 
 	auto fenceResult = mDevice.waitForFences(*mFences[mFrameIndex], vk::True, UINT64_MAX);
 	if (fenceResult != vk::Result::eSuccess) {
@@ -73,106 +73,108 @@ void Renderer::render(const float deltaTime) {
 
 	mDevice.resetFences(*mFences[mFrameIndex]);
 
-	uint64_t computeWaitValue = mTimelineValue;
-	uint64_t computeSignalValue = ++mTimelineValue;
-	uint64_t graphicsWaitValue = computeSignalValue;
-	uint64_t graphicsSignalValue = ++mTimelineValue;
+	mComputeWaitValue = mTimelineValue;
+	mComputeSignalValue = ++mTimelineValue;
+	mGraphicsWaitValue = mComputeSignalValue;
+	mGraphicsSignalValue = ++mTimelineValue;
 
 	updateUniformBuffer(mFrameIndex, deltaTime);
+}
 
-	{
-		recordComputeCommandBuffer();
-		// Submit compute work
-		vk::TimelineSemaphoreSubmitInfo computeTimelineInfo{
-			.waitSemaphoreValueCount = 1,
-			.pWaitSemaphoreValues = &computeWaitValue,
-			.signalSemaphoreValueCount = 1,
-			.pSignalSemaphoreValues = &computeSignalValue
-		};
+void Device::submitComputeWork() {
+	recordComputeCommandBuffer();
+	// Submit compute work
+	vk::TimelineSemaphoreSubmitInfo computeTimelineInfo{
+		.waitSemaphoreValueCount = 1,
+		.pWaitSemaphoreValues = &mComputeWaitValue,
+		.signalSemaphoreValueCount = 1,
+		.pSignalSemaphoreValues = &mComputeSignalValue
+	};
 
-		vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eComputeShader};
+	vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eComputeShader};
 
-		const vk::SubmitInfo computeSubmitInfo{
-			.pNext = &computeTimelineInfo,
-			.waitSemaphoreCount = 1,
-			.pWaitSemaphores = &*mSemaphore,
-			.pWaitDstStageMask = waitStages,
-			.commandBufferCount = 1,
-			.pCommandBuffers = &**mComputeCommandBuffers[mFrameIndex],
-			.signalSemaphoreCount = 1,
-			.pSignalSemaphores = &*mSemaphore
-		};
+	const vk::SubmitInfo computeSubmitInfo{
+		.pNext = &computeTimelineInfo,
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores = &*mSemaphore,
+		.pWaitDstStageMask = waitStages,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &**mComputeCommandBuffers[mFrameIndex],
+		.signalSemaphoreCount = 1,
+		.pSignalSemaphores = &*mSemaphore
+	};
 
-		mQueue.submit(computeSubmitInfo, nullptr);
+	mQueue.submit(computeSubmitInfo, nullptr);
+}
+
+void Device::submitGraphicsWork() {
+	// Record graphics command buffer
+	recordGraphicsCommandBuffer(mImageIndex);
+
+	// Submit graphics work (waits for compute to finish)
+	vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eVertexInput;
+	vk::TimelineSemaphoreSubmitInfo graphicsTimelineInfo{
+		.waitSemaphoreValueCount = 1,
+		.pWaitSemaphoreValues = &mGraphicsWaitValue,
+		.signalSemaphoreValueCount = 1,
+		.pSignalSemaphoreValues = &mGraphicsSignalValue
+	};
+
+	const vk::SubmitInfo graphicsSubmitInfo{
+		.pNext = &graphicsTimelineInfo,
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores = &*mSemaphore,
+		.pWaitDstStageMask = &waitStage,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &**mGraphicsCommandBuffers[mFrameIndex],
+		.signalSemaphoreCount = 1,
+		.pSignalSemaphores = &*mSemaphore
+	};
+
+	mQueue.submit(graphicsSubmitInfo, nullptr);
+
+	// Present the image (wait for graphics to finish)
+	const vk::SemaphoreWaitInfo waitInfo{
+		.semaphoreCount = 1,
+		.pSemaphores = &*mSemaphore,
+		.pValues = &mGraphicsSignalValue
+	};
+
+	// Wait for graphics to complete before presenting
+	auto result = mDevice.waitSemaphores(waitInfo, UINT64_MAX);
+	if (result != vk::Result::eSuccess) {
+		throw std::runtime_error("failed to wait for semaphore!");
 	}
-	{
-		// Record graphics command buffer
-		recordGraphicsCommandBuffer(imageIndex);
 
-		// Submit graphics work (waits for compute to finish)
-		vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eVertexInput;
-		vk::TimelineSemaphoreSubmitInfo graphicsTimelineInfo{
-			.waitSemaphoreValueCount = 1,
-			.pWaitSemaphoreValues = &graphicsWaitValue,
-			.signalSemaphoreValueCount = 1,
-			.pSignalSemaphoreValues = &graphicsSignalValue
-		};
+	const vk::PresentInfoKHR presentInfo{
+		.waitSemaphoreCount = 0, // No binary semaphores needed
+		.pWaitSemaphores = nullptr,
+		.swapchainCount = 1,
+		.pSwapchains = &**mSwapChain,
+		.pImageIndices = &mImageIndex
+	};
 
-		const vk::SubmitInfo graphicsSubmitInfo{
-			.pNext = &graphicsTimelineInfo,
-			.waitSemaphoreCount = 1,
-			.pWaitSemaphores = &*mSemaphore,
-			.pWaitDstStageMask = &waitStage,
-			.commandBufferCount = 1,
-			.pCommandBuffers = &**mGraphicsCommandBuffers[mFrameIndex],
-			.signalSemaphoreCount = 1,
-			.pSignalSemaphores = &*mSemaphore
-		};
-
-		mQueue.submit(graphicsSubmitInfo, nullptr);
-
-		// Present the image (wait for graphics to finish)
-		const vk::SemaphoreWaitInfo waitInfo{
-			.semaphoreCount = 1,
-			.pSemaphores = &*mSemaphore,
-			.pValues = &graphicsSignalValue
-		};
-
-		// Wait for graphics to complete before presenting
-		auto result = mDevice.waitSemaphores(waitInfo, UINT64_MAX);
-		if (result != vk::Result::eSuccess) {
-			throw std::runtime_error("failed to wait for semaphore!");
-		}
-
-		const vk::PresentInfoKHR presentInfo{
-			.waitSemaphoreCount = 0, // No binary semaphores needed
-			.pWaitSemaphores = nullptr,
-			.swapchainCount = 1,
-			.pSwapchains = &**mSwapChain,
-			.pImageIndices = &imageIndex
-		};
-
-		result = mQueue.presentKHR(presentInfo);
-		// Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
-		// here and does not need to be caught by an exception.
-		if ((result == vk::Result::eSuboptimalKHR) ||
-		    (result == vk::Result::eErrorOutOfDateKHR) ||
-		    mWindow.windowResized()) {
-			mWindow.windowResized(false);
-			mSwapChain.recreate(mSurface, mDevice, mPhysicalDevice, *mWindow);
-		} else {
-			// There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
-			assert(result == vk::Result::eSuccess);
-		}
+	result = mQueue.presentKHR(presentInfo);
+	// Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
+	// here and does not need to be caught by an exception.
+	if ((result == vk::Result::eSuboptimalKHR) ||
+	    (result == vk::Result::eErrorOutOfDateKHR) ||
+	    mWindow.windowResized()) {
+		mWindow.windowResized(false);
+		mSwapChain.recreate(mSurface, mDevice, mPhysicalDevice, *mWindow);
+	} else {
+		// There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
+		assert(result == vk::Result::eSuccess);
 	}
+
 	mFrameIndex = (mFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void Renderer::waitIdle() const {
+void Device::waitIdle() const {
 	mDevice.waitIdle();
 }
 
-void Renderer::createInstance() {
+void Device::createInstance() {
 	constexpr vk::ApplicationInfo appInfo{
 		.pApplicationName = "Particle Simulation",
 		.applicationVersion = VK_MAKE_VERSION(1, 0, 0),
@@ -227,7 +229,7 @@ void Renderer::createInstance() {
 	mInstance = vk::raii::Instance(mContext, createInfo);
 }
 
-void Renderer::setupDebugMessenger() {
+void Device::setupDebugMessenger() {
 	if constexpr (!enableValidationLayers) {
 		return;
 	}
@@ -252,7 +254,7 @@ void Renderer::setupDebugMessenger() {
 	mDebugMessenger = mInstance.createDebugUtilsMessengerEXT(debugUtilsMessengerCreateInfoEXT);
 }
 
-void Renderer::createSurface() {
+void Device::createSurface() {
 	VkSurfaceKHR surface;
 	if (glfwCreateWindowSurface(*mInstance, &*mWindow, nullptr, &surface) != 0) {
 		throw std::runtime_error("Failed to create window surface!");
@@ -261,7 +263,7 @@ void Renderer::createSurface() {
 	mSurface = vk::raii::SurfaceKHR(mInstance, surface);
 }
 
-void Renderer::createLogicalDevice() {
+void Device::createLogicalDevice() {
 	std::vector<vk::QueueFamilyProperties> queueFamilyProperties = mPhysicalDevice.getQueueFamilyProperties();
 
 	for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {
@@ -308,7 +310,7 @@ void Renderer::createLogicalDevice() {
 	mQueue = vk::raii::Queue(mDevice, mQueueIndex, 0);
 }
 
-void Renderer::createGraphicsPipeline() {
+void Device::createGraphicsPipeline() {
 	const auto shaderPath = fs::path(SHADER_BINARY_DIR) + SHADER_NAME;
 	const auto shaderCode = fs::readFile(shaderPath);
 	const auto shaderModule = createShaderModule(shaderCode);
@@ -415,7 +417,7 @@ void Renderer::createGraphicsPipeline() {
 		pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>());
 }
 
-void Renderer::createComputePipeline() {
+void Device::createComputePipeline() {
 	const auto shaderPath = fs::path(SHADER_BINARY_DIR) + SHADER_NAME;
 	const auto shaderCode = fs::readFile(shaderPath);
 	const auto shaderModule = createShaderModule(shaderCode);
@@ -438,7 +440,7 @@ void Renderer::createComputePipeline() {
 	mComputePipeline = vk::raii::Pipeline(mDevice, nullptr, pipelineInfo);
 }
 
-void Renderer::createUniformBuffers() {
+void Device::createUniformBuffers() {
 	mUniformBuffers.clear();
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
@@ -454,7 +456,7 @@ void Renderer::createUniformBuffers() {
 	}
 }
 
-void Renderer::createShaderStorageBuffers() {
+void Device::createShaderStorageBuffers() {
 	const auto particles = Particle::generate(PARTICLE_COUNT);
 	constexpr vk::DeviceSize bufferSize = sizeof(Particle) * PARTICLE_COUNT;
 
@@ -490,7 +492,7 @@ void Renderer::createShaderStorageBuffers() {
 	}
 }
 
-void Renderer::createComputeDescriptorSets() {
+void Device::createComputeDescriptorSets() {
 	std::vector<vk::DescriptorSetLayout> layouts{MAX_FRAMES_IN_FLIGHT, *mComputeDescriptorSetLayout};
 	const vk::DescriptorSetAllocateInfo allocInfo{
 		.descriptorPool = *mDescriptorPool,
@@ -555,7 +557,7 @@ void Renderer::createComputeDescriptorSets() {
 	}
 }
 
-void Renderer::createComputeDescriptorSetLayout() {
+void Device::createComputeDescriptorSetLayout() {
 	std::array<vk::DescriptorSetLayoutBinding, 3> layoutBindings{
 		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eCompute,
 		                               nullptr),
@@ -573,7 +575,7 @@ void Renderer::createComputeDescriptorSetLayout() {
 	mComputeDescriptorSetLayout = vk::raii::DescriptorSetLayout(mDevice, layoutInfo);
 }
 
-void Renderer::createCommandBuffers() {
+void Device::createCommandBuffers() {
 	mGraphicsCommandBuffers.clear();
 	mComputeCommandBuffers.clear();
 
@@ -583,7 +585,7 @@ void Renderer::createCommandBuffers() {
 	}
 }
 
-void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
+void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	const auto& commandBuffer = mGraphicsCommandBuffers[mFrameIndex];
 	(*commandBuffer).reset();
 	(*commandBuffer).begin({});
@@ -646,18 +648,18 @@ void Renderer::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	(*commandBuffer).end();
 }
 
-void Renderer::recordComputeCommandBuffer() {
+void Device::recordComputeCommandBuffer() {
 	const auto& commandBuffer = mComputeCommandBuffers[mFrameIndex];
 	(*commandBuffer).reset();
 	(*commandBuffer).begin({});
 	(*commandBuffer).bindPipeline(vk::PipelineBindPoint::eCompute, mComputePipeline);
 	(*commandBuffer).bindDescriptorSets(vk::PipelineBindPoint::eCompute, mComputePipelineLayout, 0,
-	                                 {mComputeDescriptorSets[mFrameIndex]}, {});
+	                                    {mComputeDescriptorSets[mFrameIndex]}, {});
 	(*commandBuffer).dispatch(PARTICLE_COUNT / 256, 1, 1);
 	(*commandBuffer).end();
 }
 
-void Renderer::createSyncObjects() {
+void Device::createSyncObjects() {
 	mFences.clear();
 
 	vk::SemaphoreTypeCreateInfo semaphoreType{.semaphoreType = vk::SemaphoreType::eTimeline, .initialValue = 0};
@@ -670,7 +672,7 @@ void Renderer::createSyncObjects() {
 	}
 }
 
-void Renderer::getPhysicalDevice() {
+void Device::getPhysicalDevice() {
 	const auto physicalDevices = mInstance.enumeratePhysicalDevices();
 
 	if (physicalDevices.empty()) {
@@ -682,11 +684,10 @@ void Renderer::getPhysicalDevice() {
 
 	if (deviceIt != physicalDevices.end()) {
 		mPhysicalDevice = *deviceIt;
-
 	}
 }
 
-std::vector<const char*> Renderer::getRequiredInstanceExtensions() {
+std::vector<const char*> Device::getRequiredInstanceExtensions() {
 	uint32_t glfwExtensionCount = 0;
 	const auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
@@ -698,7 +699,7 @@ std::vector<const char*> Renderer::getRequiredInstanceExtensions() {
 	return extensions;
 }
 
-vk::Bool32 Renderer::debugCallback(
+vk::Bool32 Device::debugCallback(
 	vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
 	const vk::DebugUtilsMessageTypeFlagsEXT type,
 	const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -708,7 +709,7 @@ vk::Bool32 Renderer::debugCallback(
 	return vk::False;
 }
 
-bool Renderer::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
+bool Device::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 	// Check if the physicalDevice supports the Vulkan 1.3 API version
 	bool supportsVulkan1_3 = phyDevice.getProperties().apiVersion >= vk::ApiVersion13;
 
@@ -747,7 +748,8 @@ bool Renderer::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 	bool supportsShaderDrawParameters = features2.get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters;
 	bool supportsDynamicRendering = features2.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering;
 	bool supportsSynchronization2 = features2.get<vk::PhysicalDeviceVulkan13Features>().synchronization2;
-	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
+	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().
+			extendedDynamicState;
 	bool supportsRequiredFeatures =
 			supportsSamplerAnisotropy &&
 			supportsShaderDrawParameters &&
@@ -758,20 +760,20 @@ bool Renderer::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 	return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions && supportsRequiredFeatures;
 }
 
-void Renderer::copyBuffer(const Buffer& dstBuffer, const Buffer& srcBuffer, const vk::DeviceSize size) const {
+void Device::copyBuffer(const Buffer& dstBuffer, const Buffer& srcBuffer, const vk::DeviceSize size) const {
 	const vk::raii::CommandBuffer commandCopyBuffer = beginSingleTimeCommands();
 	commandCopyBuffer.copyBuffer(*srcBuffer, *dstBuffer, vk::BufferCopy(0, 0, size));
 	endSingleTimeCommands(commandCopyBuffer);
 }
 
-void Renderer::updateUniformBuffer(const uint32_t currentImage, const float deltaTime) const {
+void Device::updateUniformBuffer(const uint32_t currentImage, const float deltaTime) const {
 	UniformBufferObject ubo{};
 	ubo.deltaTime = static_cast<float>(deltaTime) * 2.0f;
 
 	memcpy(mUniformBuffers[currentImage].getMapped(), &ubo, sizeof(ubo));
 }
 
-vk::raii::ShaderModule Renderer::createShaderModule(const std::vector<char>& code) const {
+vk::raii::ShaderModule Device::createShaderModule(const std::vector<char>& code) const {
 	const vk::ShaderModuleCreateInfo createInfo{
 		.codeSize = code.size() * sizeof(char),
 		.pCode = reinterpret_cast<const uint32_t*>(code.data())
@@ -781,7 +783,7 @@ vk::raii::ShaderModule Renderer::createShaderModule(const std::vector<char>& cod
 	return shaderModule;
 }
 
-vk::raii::CommandBuffer Renderer::beginSingleTimeCommands() const {
+vk::raii::CommandBuffer Device::beginSingleTimeCommands() const {
 	const vk::CommandBufferAllocateInfo allocInfo{
 		.commandPool = **mCommandPool,
 		.level = vk::CommandBufferLevel::ePrimary,
@@ -795,7 +797,7 @@ vk::raii::CommandBuffer Renderer::beginSingleTimeCommands() const {
 	return commandBuffer;
 }
 
-void Renderer::endSingleTimeCommands(const vk::raii::CommandBuffer& commandBuffer) const {
+void Device::endSingleTimeCommands(const vk::raii::CommandBuffer& commandBuffer) const {
 	commandBuffer.end();
 
 	const vk::SubmitInfo submitInfo{.commandBufferCount = 1, .pCommandBuffers = &*commandBuffer};
