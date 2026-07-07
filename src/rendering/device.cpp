@@ -135,7 +135,9 @@ void Device::submitGraphicsWork() {
 	};
 
 	mQueue.submit(graphicsSubmitInfo, nullptr);
+}
 
+void Device::presentFrame() {
 	// Present the image (wait for graphics to finish)
 	const vk::SemaphoreWaitInfo waitInfo{
 		.semaphoreCount = 1,
@@ -161,14 +163,14 @@ void Device::submitGraphicsWork() {
 	// Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
 	// here and does not need to be caught by an exception.
 	if ((result == vk::Result::eSuboptimalKHR) ||
-	    (result == vk::Result::eErrorOutOfDateKHR) ||
-	    mWindow.windowResized()) {
+		(result == vk::Result::eErrorOutOfDateKHR) ||
+		mWindow.windowResized()) {
 		mWindow.windowResized(false);
 		mSwapChain->recreate(mSurface, mDevice, mPhysicalDevice, *mWindow);
-	} else {
-		// There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
-		assert(result == vk::Result::eSuccess);
-	}
+		} else {
+			// There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
+			assert(result == vk::Result::eSuccess);
+		}
 
 	mFrameIndex = (mFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 }

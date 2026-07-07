@@ -23,6 +23,8 @@ public:
 
 	void submitGraphicsWork();
 
+	void presentFrame();
+
 	void waitIdle() const;
 
 private:

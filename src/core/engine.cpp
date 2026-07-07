@@ -29,6 +29,7 @@ void Engine::run() {
 		mDevice->prepareFrame(mDeltaTime);
 		mDevice->submitComputeWork();
 		mDevice->submitGraphicsWork();
+		mDevice->presentFrame();
 	}
 	mDevice->waitIdle();
 }
