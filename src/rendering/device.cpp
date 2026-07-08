@@ -19,6 +19,7 @@
 #include "descriptorSetLayout.h"
 #include "deviceExtension.hpp"
 #include "image.h"
+#include "pipelineBuilder.h"
 #include "shader.h"
 #include "validation.hpp"
 #include "../core/window.h"
@@ -39,25 +40,27 @@ void Device::init() {
 		mSwapChain = std::make_unique<Swapchain>(mSurface, mDevice, mPhysicalDevice, *mWindow);
 
 		mComputeDescriptorSetLayout = std::make_unique<DescriptorSetLayout>(mDevice);
-		mComputeDescriptorSetLayout->addBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eCompute).
-				addBinding(1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute).
-				addBinding(2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute).
-				build();
+		mComputeDescriptorSetLayout->addBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eCompute)
+				.addBinding(1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute)
+				.addBinding(2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute)
+				.build();
 
-		createGraphicsPipeline();
-		createComputePipeline();
+		PipelineBuilder builder{mDevice, std::string(SHADER_BINARY_DIR) + SHADER_NAME};
 
+		mGraphicsPipeline = std::make_unique<GraphicsPipeline>(builder, *mSwapChain, Particle::layout());
+		builder.reset();
+		mComputePipeline = std::make_unique<ComputePipeline>(builder, *mComputeDescriptorSetLayout, 1);
 		mCommandPool = std::make_unique<CommandPool>(mDevice, mQueueIndex, vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
 
 		createShaderStorageBuffers();
 		createUniformBuffers();
 
 		mDescriptorPool = std::make_unique<DescriptorPool>(mDevice);
-		mDescriptorPool->addMaxSets(MAX_FRAMES_IN_FLIGHT).
-				addPoolFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet).
-				addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT).
-				addPoolSize(vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2).
-				build();
+		mDescriptorPool->addMaxSets(MAX_FRAMES_IN_FLIGHT)
+				.addPoolFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
+				.addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
+				.addPoolSize(vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2)
+				.build();
 
 		createComputeDescriptorSets();
 		createCommandBuffers();
@@ -263,137 +266,6 @@ void Device::createLogicalDevice() {
 	mQueue = vk::raii::Queue(mDevice, mQueueIndex, 0);
 }
 
-void Device::createGraphicsPipeline() {
-	const auto shaderPath = std::string(SHADER_BINARY_DIR) + SHADER_NAME;
-	Shader shader{mDevice, shaderPath};
-
-	const vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
-		.stage = vk::ShaderStageFlagBits::eVertex,
-		.module = *shader,
-		.pName = "vertMain"
-	};
-	const vk::PipelineShaderStageCreateInfo fragShaderStageInfo{
-		.stage = vk::ShaderStageFlagBits::eFragment,
-		.module = *shader,
-		.pName = "fragMain"
-	};
-
-	const vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
-
-	auto bindingDescription = Particle::getBindingDescription();
-	auto attributeDescriptions = Particle::getAttributeDescriptions();
-
-	const vk::PipelineVertexInputStateCreateInfo vertexInputInfo{
-		.vertexBindingDescriptionCount = 1,
-		.pVertexBindingDescriptions = &bindingDescription,
-		.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
-		.pVertexAttributeDescriptions = attributeDescriptions.data()
-	};
-
-	constexpr vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
-		.topology = vk::PrimitiveTopology::ePointList,
-		.primitiveRestartEnable = vk::False
-	};
-
-	constexpr vk::PipelineViewportStateCreateInfo viewportState{.viewportCount = 1, .scissorCount = 1};
-
-	constexpr vk::PipelineRasterizationStateCreateInfo rasterizer{
-		.depthClampEnable = vk::False,
-		.rasterizerDiscardEnable = vk::False,
-		.polygonMode = vk::PolygonMode::eFill,
-		.cullMode = vk::CullModeFlagBits::eBack,
-		.frontFace = vk::FrontFace::eCounterClockwise,
-		.depthBiasEnable = vk::False,
-		.lineWidth = 1.0f
-	};
-
-	constexpr vk::PipelineMultisampleStateCreateInfo multisampling{
-		.rasterizationSamples = vk::SampleCountFlagBits::e1,
-		.sampleShadingEnable = vk::False
-	};
-
-	constexpr vk::PipelineColorBlendAttachmentState colorBlendAttachment{
-		.blendEnable = vk::True,
-		.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
-		.dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
-		.colorBlendOp = vk::BlendOp::eAdd,
-		.srcAlphaBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
-		.dstAlphaBlendFactor = vk::BlendFactor::eZero,
-		.alphaBlendOp = vk::BlendOp::eAdd,
-		.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-		                  vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
-	};
-
-	const vk::PipelineColorBlendStateCreateInfo colorBlending{
-		.logicOpEnable = vk::False,
-		.logicOp = vk::LogicOp::eCopy,
-		.attachmentCount = 1,
-		.pAttachments = &colorBlendAttachment
-	};
-
-	constexpr std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-
-	const vk::PipelineDynamicStateCreateInfo dynamicState{
-		.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
-		.pDynamicStates = dynamicStates.data()
-	};
-
-	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
-	mGraphicsPipelineLayout = vk::raii::PipelineLayout(mDevice, pipelineLayoutInfo);
-
-	const vk::StructureChain<
-		vk::GraphicsPipelineCreateInfo,
-		vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain = {
-		{
-			.stageCount = 2,
-			.pStages = shaderStages,
-			.pVertexInputState = &vertexInputInfo,
-			.pInputAssemblyState = &inputAssembly,
-			.pViewportState = &viewportState,
-			.pRasterizationState = &rasterizer,
-			.pMultisampleState = &multisampling,
-			.pColorBlendState = &colorBlending,
-			.pDynamicState = &dynamicState,
-			.layout = mGraphicsPipelineLayout,
-			.renderPass = nullptr
-		},
-		{
-			.colorAttachmentCount = 1,
-			.pColorAttachmentFormats = &mSwapChain->surfaceFormat().format,
-		}
-	};
-
-	mGraphicsPipeline = vk::raii::Pipeline(
-		mDevice,
-		nullptr,
-		pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>());
-}
-
-void Device::createComputePipeline() {
-	const auto shaderPath = std::string(SHADER_BINARY_DIR) + SHADER_NAME;
-	Shader shader{mDevice, shaderPath};
-
-	const vk::PipelineShaderStageCreateInfo computeShaderStageInfo{
-		.stage = vk::ShaderStageFlagBits::eCompute,
-		.module = *shader,
-		.pName = "compMain"
-	};
-
-	const vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
-		.setLayoutCount = 1,
-		.pSetLayouts = &***mComputeDescriptorSetLayout
-	};
-
-	mComputePipelineLayout = vk::raii::PipelineLayout(mDevice, pipelineLayoutInfo);
-
-	const vk::ComputePipelineCreateInfo pipelineInfo{
-		.stage = computeShaderStageInfo,
-		.layout = *mComputePipelineLayout
-	};
-
-	mComputePipeline = vk::raii::Pipeline(mDevice, nullptr, pipelineInfo);
-}
-
 void Device::createUniformBuffers() {
 	mUniformBuffers.clear();
 
@@ -455,26 +327,26 @@ void Device::createComputeDescriptorSets() {
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 		writer.writeBuffer(
-			*mComputeDescriptorSets[i],
-			0,
-			vk::DescriptorType::eUniformBuffer,
-			**mUniformBuffers[i],
-			0,
-			mUniformBuffers[i].size()).
-		writeBuffer(
-			*mComputeDescriptorSets[i],
-			1,
-			vk::DescriptorType::eStorageBuffer,
-			**mShaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT],
-			0,
-			sizeof(Particle) * PARTICLE_COUNT).
-		writeBuffer(
-			*mComputeDescriptorSets[i],
-			2,
-			vk::DescriptorType::eStorageBuffer,
-			**mShaderStorageBuffers[i],
-			0,
-			sizeof(Particle) * PARTICLE_COUNT);
+					*mComputeDescriptorSets[i],
+					0,
+					vk::DescriptorType::eUniformBuffer,
+					**mUniformBuffers[i],
+					0,
+					mUniformBuffers[i].size()).
+				writeBuffer(
+					*mComputeDescriptorSets[i],
+					1,
+					vk::DescriptorType::eStorageBuffer,
+					**mShaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT],
+					0,
+					sizeof(Particle) * PARTICLE_COUNT).
+				writeBuffer(
+					*mComputeDescriptorSets[i],
+					2,
+					vk::DescriptorType::eStorageBuffer,
+					**mShaderStorageBuffers[i],
+					0,
+					sizeof(Particle) * PARTICLE_COUNT);
 
 		writer.update();
 	}
@@ -526,7 +398,7 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	};
 
 	(*commandBuffer).beginRendering(renderingInfo);
-	(*commandBuffer).bindPipeline(vk::PipelineBindPoint::eGraphics, *mGraphicsPipeline);
+	(*commandBuffer).bindPipeline(vk::PipelineBindPoint::eGraphics, **mGraphicsPipeline);
 	(*commandBuffer).setViewport(
 		0,
 		vk::Viewport(
@@ -558,8 +430,8 @@ void Device::recordComputeCommandBuffer() {
 	const auto& commandBuffer = mComputeCommandBuffers[mFrameIndex];
 	(*commandBuffer).reset();
 	(*commandBuffer).begin({});
-	(*commandBuffer).bindPipeline(vk::PipelineBindPoint::eCompute, mComputePipeline);
-	(*commandBuffer).bindDescriptorSets(vk::PipelineBindPoint::eCompute, mComputePipelineLayout, 0,
+	(*commandBuffer).bindPipeline(vk::PipelineBindPoint::eCompute, **mComputePipeline);
+	(*commandBuffer).bindDescriptorSets(vk::PipelineBindPoint::eCompute, mComputePipeline->layout(), 0,
 	                                    {mComputeDescriptorSets[mFrameIndex]}, {});
 	(*commandBuffer).dispatch(PARTICLE_COUNT / 256, 1, 1);
 	(*commandBuffer).end();
@@ -569,7 +441,8 @@ void Device::createSyncObjects() {
 	mFences.clear();
 
 	constexpr vk::SemaphoreTypeCreateInfo semaphoreType{
-		.semaphoreType = vk::SemaphoreType::eTimeline, .initialValue = 0
+		.semaphoreType = vk::SemaphoreType::eTimeline,
+		.initialValue = 0
 	};
 	mSemaphore = vk::raii::Semaphore(mDevice, {.pNext = &semaphoreType});
 	mTimelineValue = 0;
