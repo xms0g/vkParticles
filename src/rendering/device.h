@@ -40,6 +40,16 @@ private:
 
 	void createLogicalDevice();
 
+	void createSwapchain();
+
+	void createDescriptorSetLayout();
+
+	void createPipelines();
+
+	void createCommandPool();
+
+	void createDescriptorPool();
+
 	void createUniformBuffers();
 
 	void createShaderStorageBuffers();

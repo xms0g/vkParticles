@@ -37,31 +37,13 @@ void Device::init() {
 		createSurface();
 		getPhysicalDevice();
 		createLogicalDevice();
-		mSwapChain = std::make_unique<Swapchain>(mSurface, mDevice, mPhysicalDevice, *mWindow);
-
-		mComputeDescriptorSetLayout = std::make_unique<DescriptorSetLayout>(mDevice);
-		mComputeDescriptorSetLayout->addBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eCompute)
-				.addBinding(1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute)
-				.addBinding(2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute)
-				.build();
-
-		PipelineBuilder builder{mDevice, std::string(SHADER_BINARY_DIR) + SHADER_NAME};
-
-		mGraphicsPipeline = std::make_unique<GraphicsPipeline>(builder, *mSwapChain, Particle::layout());
-		builder.reset();
-		mComputePipeline = std::make_unique<ComputePipeline>(builder, *mComputeDescriptorSetLayout, 1);
-		mCommandPool = std::make_unique<CommandPool>(mDevice, mQueueIndex, vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
-
+		createSwapchain();
+		createDescriptorSetLayout();
+		createPipelines();
+		createCommandPool();
 		createShaderStorageBuffers();
 		createUniformBuffers();
-
-		mDescriptorPool = std::make_unique<DescriptorPool>(mDevice);
-		mDescriptorPool->addMaxSets(MAX_FRAMES_IN_FLIGHT)
-				.addPoolFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-				.addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
-				.addPoolSize(vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2)
-				.build();
-
+		createDescriptorPool();
 		createComputeDescriptorSets();
 		createCommandBuffers();
 		createSyncObjects();
@@ -266,6 +248,40 @@ void Device::createLogicalDevice() {
 	mQueue = vk::raii::Queue(mDevice, mQueueIndex, 0);
 }
 
+void Device::createSwapchain() {
+	mSwapChain = std::make_unique<Swapchain>(mSurface, mDevice, mPhysicalDevice, *mWindow);
+}
+
+void Device::createDescriptorSetLayout() {
+	mComputeDescriptorSetLayout = std::make_unique<DescriptorSetLayout>(mDevice);
+	mComputeDescriptorSetLayout->addBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eCompute)
+			.addBinding(1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute)
+			.addBinding(2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute)
+			.build();
+}
+
+void Device::createPipelines() {
+	PipelineBuilder builder{mDevice, std::string(SHADER_BINARY_DIR) + SHADER_NAME};
+
+	mGraphicsPipeline = std::make_unique<GraphicsPipeline>(builder, *mSwapChain, Particle::layout());
+	builder.reset();
+	mComputePipeline = std::make_unique<ComputePipeline>(builder, *mComputeDescriptorSetLayout, 1);
+}
+
+void Device::createCommandPool() {
+	mCommandPool = std::make_unique<CommandPool>(mDevice, mQueueIndex,
+	                                             vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+}
+
+void Device::createDescriptorPool() {
+	mDescriptorPool = std::make_unique<DescriptorPool>(mDevice);
+	mDescriptorPool->addMaxSets(MAX_FRAMES_IN_FLIGHT)
+			.addPoolFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
+			.addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
+			.addPoolSize(vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2)
+			.build();
+}
+
 void Device::createUniformBuffers() {
 	mUniformBuffers.clear();
 
@@ -332,15 +348,15 @@ void Device::createComputeDescriptorSets() {
 					vk::DescriptorType::eUniformBuffer,
 					**mUniformBuffers[i],
 					0,
-					mUniformBuffers[i].size()).
-				writeBuffer(
+					mUniformBuffers[i].size())
+				.writeBuffer(
 					*mComputeDescriptorSets[i],
 					1,
 					vk::DescriptorType::eStorageBuffer,
 					**mShaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT],
 					0,
-					sizeof(Particle) * PARTICLE_COUNT).
-				writeBuffer(
+					sizeof(Particle) * PARTICLE_COUNT)
+				.writeBuffer(
 					*mComputeDescriptorSets[i],
 					2,
 					vk::DescriptorType::eStorageBuffer,
@@ -521,8 +537,7 @@ bool Device::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 	bool supportsShaderDrawParameters = features2.get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters;
 	bool supportsDynamicRendering = features2.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering;
 	bool supportsSynchronization2 = features2.get<vk::PhysicalDeviceVulkan13Features>().synchronization2;
-	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().
-			extendedDynamicState;
+	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
 	bool supportsRequiredFeatures =
 			supportsSamplerAnisotropy &&
 			supportsShaderDrawParameters &&
