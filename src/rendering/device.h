@@ -76,9 +76,6 @@ private:
 	void updateUniformBuffer(uint32_t currentImage, float deltaTime) const;
 
 	[[nodiscard]]
-	vk::raii::ShaderModule createShaderModule(const std::vector<char>& code) const;
-
-	[[nodiscard]]
 	vk::raii::CommandBuffer beginSingleTimeCommands() const;
 
 	void endSingleTimeCommands(const vk::raii::CommandBuffer& commandBuffer) const;

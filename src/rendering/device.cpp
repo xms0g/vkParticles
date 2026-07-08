@@ -1,10 +1,8 @@
 #include "device.h"
-#include <cstring>
 #include <set>
 #include <algorithm>
 #include <filesystem>
 #include <iostream>
-#include <limits>
 #include <stdexcept>
 #include <chrono>
 #include <random>
@@ -12,7 +10,6 @@
 #include <GLFW/glfw3.h>
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include "particle.hpp"
 #include "buffer.h"
 #include "swapchain.h"
@@ -20,10 +17,10 @@
 #include "descriptorPool.h"
 #include "deviceExtension.hpp"
 #include "image.h"
+#include "shader.h"
 #include "validation.hpp"
 #include "../core/window.h"
 #include "../config/config.hpp"
-#include "../io/filesystem.h"
 
 Device::Device(Window& window) : mWindow(window) {
 }
@@ -262,18 +259,17 @@ void Device::createLogicalDevice() {
 }
 
 void Device::createGraphicsPipeline() {
-	const auto shaderPath = fs::path(SHADER_BINARY_DIR) + SHADER_NAME;
-	const auto shaderCode = fs::readFile(shaderPath);
-	const auto shaderModule = createShaderModule(shaderCode);
+	const auto shaderPath = std::string(SHADER_BINARY_DIR) + SHADER_NAME;
+	Shader shader{mDevice, shaderPath};
 
 	const vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
 		.stage = vk::ShaderStageFlagBits::eVertex,
-		.module = shaderModule,
+		.module = *shader,
 		.pName = "vertMain"
 	};
 	const vk::PipelineShaderStageCreateInfo fragShaderStageInfo{
 		.stage = vk::ShaderStageFlagBits::eFragment,
-		.module = shaderModule,
+		.module = *shader,
 		.pName = "fragMain"
 	};
 
@@ -369,13 +365,12 @@ void Device::createGraphicsPipeline() {
 }
 
 void Device::createComputePipeline() {
-	const auto shaderPath = fs::path(SHADER_BINARY_DIR) + SHADER_NAME;
-	const auto shaderCode = fs::readFile(shaderPath);
-	const auto shaderModule = createShaderModule(shaderCode);
+	const auto shaderPath = std::string(SHADER_BINARY_DIR) + SHADER_NAME;
+	Shader shader{mDevice, shaderPath};
 
 	const vk::PipelineShaderStageCreateInfo computeShaderStageInfo{
 		.stage = vk::ShaderStageFlagBits::eCompute,
-		.module = shaderModule,
+		.module = *shader,
 		.pName = "compMain"
 	};
 
@@ -717,16 +712,6 @@ void Device::updateUniformBuffer(const uint32_t currentImage, const float deltaT
 	ubo.deltaTime = static_cast<float>(deltaTime) * 2.0f;
 
 	memcpy(mUniformBuffers[currentImage].mappedMemory(), &ubo, sizeof(ubo));
-}
-
-vk::raii::ShaderModule Device::createShaderModule(const std::vector<char>& code) const {
-	const vk::ShaderModuleCreateInfo createInfo{
-		.codeSize = code.size() * sizeof(char),
-		.pCode = reinterpret_cast<const uint32_t*>(code.data())
-	};
-
-	vk::raii::ShaderModule shaderModule{mDevice, createInfo};
-	return shaderModule;
 }
 
 vk::raii::CommandBuffer Device::beginSingleTimeCommands() const {
