@@ -99,7 +99,7 @@ private:
 	vk::raii::Queue mQueue{nullptr};
 	uint32_t mQueueIndex{static_cast<uint32_t>(~0)};
 	vk::raii::SurfaceKHR mSurface{nullptr};
-	std::unique_ptr<Swapchain> mSwapChain;
+	std::unique_ptr<Swapchain> mSwapchain;
 	std::unique_ptr<DescriptorSetLayout> mComputeDescriptorSetLayout;
 	std::unique_ptr<DescriptorPool> mDescriptorPool;
 	std::vector<vk::raii::DescriptorSet> mComputeDescriptorSets;
