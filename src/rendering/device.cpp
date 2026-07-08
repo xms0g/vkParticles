@@ -138,10 +138,12 @@ void Device::createInstance() {
 			supportedValidationLayers.insert(layer.layerName);
 		}
 
-		for (auto& layer: validationLayers) {
-			if (!supportedValidationLayers.contains(layer)) {
-				throw std::runtime_error("Required Validation Layer not supported: " + std::string(layer));
-			}
+		bool supportedRequiredValidationLayers = std::ranges::all_of(validationLayers, [&](const auto& layer) {
+			return supportedValidationLayers.contains(layer);
+		});
+
+		if (!supportedRequiredValidationLayers) {
+			throw std::runtime_error("Required Validation Layers not supported");
 		}
 	}
 
@@ -667,13 +669,9 @@ bool Device::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 	bool supportsVulkan1_3 = phyDevice.getProperties().apiVersion >= vk::ApiVersion13;
 
 	// Check if any of the queue families support graphics operations
-	bool supportsGraphics{false};
-	for (const auto& qfp: phyDevice.getQueueFamilyProperties()) {
-		if (qfp.queueFlags & vk::QueueFlagBits::eGraphics) {
-			supportsGraphics = true;
-			break;
-		}
-	}
+	bool supportsGraphics = std::ranges::any_of(phyDevice.getQueueFamilyProperties(), [&](const auto& qfp) {
+		return static_cast<bool>(qfp.queueFlags & vk::QueueFlagBits::eGraphics);
+	});
 
 	// Check if all required physicalDevice extensions are available
 	std::unordered_set<std::string_view> availableSet;
@@ -681,13 +679,9 @@ bool Device::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 		availableSet.insert(extensionName);
 	}
 
-	bool supportsAllRequiredExtensions{true};
-	for (const char* required: deviceExtensions) {
-		if (!availableSet.contains(required)) {
-			supportsAllRequiredExtensions = false;
-			break;
-		}
-	}
+	bool supportsAllRequiredExtensions = std::ranges::all_of(deviceExtensions, [&](const char* required) {
+		return availableSet.contains(required);
+	});
 
 	// Check if the physicalDevice supports the required features (dynamic rendering and extended dynamic state)
 	auto features2 = phyDevice.getFeatures2<
@@ -701,8 +695,7 @@ bool Device::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 	bool supportsShaderDrawParameters = features2.get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters;
 	bool supportsDynamicRendering = features2.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering;
 	bool supportsSynchronization2 = features2.get<vk::PhysicalDeviceVulkan13Features>().synchronization2;
-	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().
-			extendedDynamicState;
+	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
 	bool supportsRequiredFeatures =
 			supportsSamplerAnisotropy &&
 			supportsShaderDrawParameters &&
