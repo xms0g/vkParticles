@@ -3,6 +3,8 @@
 #include <vulkan/vulkan_raii.hpp>
 #include "commandBuffer.h"
 
+class DescriptorSetLayout;
+
 enum class QueueType { Graphics, Compute };
 
 class CommandPool;
@@ -46,8 +48,6 @@ private:
 	void createShaderStorageBuffers();
 
 	void createComputeDescriptorSets();
-
-	void createComputeDescriptorSetLayout();
 
 	void createCommandBuffers();
 
@@ -93,7 +93,7 @@ private:
 	uint32_t mQueueIndex{static_cast<uint32_t>(~0)};
 	vk::raii::SurfaceKHR mSurface{nullptr};
 	std::unique_ptr<Swapchain> mSwapChain;
-	vk::raii::DescriptorSetLayout mComputeDescriptorSetLayout{nullptr};
+	std::unique_ptr<DescriptorSetLayout> mComputeDescriptorSetLayout;
 	std::unique_ptr<DescriptorPool> mDescriptorPool;
 	std::vector<vk::raii::DescriptorSet> mComputeDescriptorSets;
 	vk::raii::PipelineLayout mGraphicsPipelineLayout{nullptr};

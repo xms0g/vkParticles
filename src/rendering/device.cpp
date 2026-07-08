@@ -15,6 +15,7 @@
 #include "swapchain.h"
 #include "commandPool.h"
 #include "descriptorPool.h"
+#include "descriptorSetLayout.h"
 #include "deviceExtension.hpp"
 #include "image.h"
 #include "shader.h"
@@ -35,14 +36,17 @@ void Device::init() {
 		getPhysicalDevice();
 		createLogicalDevice();
 		mSwapChain = std::make_unique<Swapchain>(mSurface, mDevice, mPhysicalDevice, *mWindow);
-		createComputeDescriptorSetLayout();
+
+		mComputeDescriptorSetLayout = std::make_unique<DescriptorSetLayout>(mDevice);
+		mComputeDescriptorSetLayout->addBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eCompute).
+				addBinding(1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute).
+				addBinding(2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute).
+				build();
+
 		createGraphicsPipeline();
 		createComputePipeline();
 
-		mCommandPool = std::make_unique<CommandPool>(
-			mDevice,
-			mQueueIndex,
-			vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+		mCommandPool = std::make_unique<CommandPool>(mDevice, mQueueIndex, vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
 
 		createShaderStorageBuffers();
 		createUniformBuffers();
@@ -376,7 +380,7 @@ void Device::createComputePipeline() {
 
 	const vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
 		.setLayoutCount = 1,
-		.pSetLayouts = &*mComputeDescriptorSetLayout
+		.pSetLayouts = &***mComputeDescriptorSetLayout
 	};
 
 	mComputePipelineLayout = vk::raii::PipelineLayout(mDevice, pipelineLayoutInfo);
@@ -442,7 +446,7 @@ void Device::createShaderStorageBuffers() {
 }
 
 void Device::createComputeDescriptorSets() {
-	const std::vector<vk::DescriptorSetLayout> layouts{MAX_FRAMES_IN_FLIGHT, *mComputeDescriptorSetLayout};
+	const std::vector<vk::DescriptorSetLayout> layouts{MAX_FRAMES_IN_FLIGHT, **mComputeDescriptorSetLayout};
 	const vk::DescriptorSetAllocateInfo allocInfo{
 		.descriptorPool = **mDescriptorPool,
 		.descriptorSetCount = static_cast<uint32_t>(layouts.size()),
@@ -504,24 +508,6 @@ void Device::createComputeDescriptorSets() {
 
 		mDevice.updateDescriptorSets(descriptorWrites, {});
 	}
-}
-
-void Device::createComputeDescriptorSetLayout() {
-	constexpr std::array<vk::DescriptorSetLayoutBinding, 3> layoutBindings{
-		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eCompute,
-		                               nullptr),
-		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute,
-		                               nullptr),
-		vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute,
-		                               nullptr)
-	};
-
-	const vk::DescriptorSetLayoutCreateInfo layoutInfo{
-		.bindingCount = static_cast<uint32_t>(layoutBindings.size()),
-		.pBindings = layoutBindings.data()
-	};
-
-	mComputeDescriptorSetLayout = vk::raii::DescriptorSetLayout(mDevice, layoutInfo);
 }
 
 void Device::createCommandBuffers() {
@@ -612,7 +598,9 @@ void Device::recordComputeCommandBuffer() {
 void Device::createSyncObjects() {
 	mFences.clear();
 
-	constexpr vk::SemaphoreTypeCreateInfo semaphoreType{.semaphoreType = vk::SemaphoreType::eTimeline, .initialValue = 0};
+	constexpr vk::SemaphoreTypeCreateInfo semaphoreType{
+		.semaphoreType = vk::SemaphoreType::eTimeline, .initialValue = 0
+	};
 	mSemaphore = vk::raii::Semaphore(mDevice, {.pNext = &semaphoreType});
 	mTimelineValue = 0;
 
@@ -690,7 +678,8 @@ bool Device::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 	bool supportsShaderDrawParameters = features2.get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters;
 	bool supportsDynamicRendering = features2.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering;
 	bool supportsSynchronization2 = features2.get<vk::PhysicalDeviceVulkan13Features>().synchronization2;
-	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
+	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().
+			extendedDynamicState;
 	bool supportsRequiredFeatures =
 			supportsSamplerAnisotropy &&
 			supportsShaderDrawParameters &&
