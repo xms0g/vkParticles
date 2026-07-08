@@ -3,7 +3,6 @@
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include "vertex.hpp"
-#include "../config/config.hpp"
 
 struct Particle {
 	glm::vec2 position;
@@ -20,7 +19,7 @@ struct Particle {
 		};
 	}
 
-	static std::vector<Particle> generate(const uint32_t count) {
+	static std::vector<Particle> generate(const uint32_t count, const float width, const float height) {
 		// Initialize particles
 		std::default_random_engine rndEngine(static_cast<unsigned>(time(nullptr)));
 		std::uniform_real_distribution rndDist(0.0f, 1.0f);
@@ -30,7 +29,7 @@ struct Particle {
 		for (auto& [position, velocity, color]: particles) {
 			const float r = 0.25f * sqrtf(rndDist(rndEngine));
 			const float theta = rndDist(rndEngine) * 2.0f * 3.14159265358979323846f;
-			const float x = r * cosf(theta) * HEIGHT / WIDTH;
+			const float x = r * cosf(theta) * height / width;
 			const float y = r * sinf(theta);
 			position = glm::vec2(x, y);
 			velocity = normalize(glm::vec2(x, y)) * 0.5f;

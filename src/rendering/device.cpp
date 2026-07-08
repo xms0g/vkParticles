@@ -283,7 +283,7 @@ void Device::createUniformBuffers() {
 }
 
 void Device::createShaderStorageBuffers() {
-	const auto particles = Particle::generate(PARTICLE_COUNT);
+	const auto particles = Particle::generate(PARTICLE_COUNT, WIDTH, HEIGHT);
 	constexpr vk::DeviceSize bufferSize = sizeof(Particle) * PARTICLE_COUNT;
 
 	// Create a staging buffer used to upload data to the gpu
