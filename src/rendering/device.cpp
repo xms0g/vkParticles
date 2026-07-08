@@ -15,6 +15,7 @@
 #include "swapchain.h"
 #include "commandPool.h"
 #include "descriptorPool.h"
+#include "descriptorSet.h"
 #include "descriptorSetLayout.h"
 #include "deviceExtension.hpp"
 #include "image.h"
@@ -446,67 +447,36 @@ void Device::createShaderStorageBuffers() {
 }
 
 void Device::createComputeDescriptorSets() {
-	const std::vector<vk::DescriptorSetLayout> layouts{MAX_FRAMES_IN_FLIGHT, **mComputeDescriptorSetLayout};
-	const vk::DescriptorSetAllocateInfo allocInfo{
-		.descriptorPool = **mDescriptorPool,
-		.descriptorSetCount = static_cast<uint32_t>(layouts.size()),
-		.pSetLayouts = layouts.data()
-	};
+	const DescriptorSetAllocator allocator(mDevice, *mDescriptorPool);
+	mComputeDescriptorSets = allocator.allocate(MAX_FRAMES_IN_FLIGHT, **mComputeDescriptorSetLayout);
 
-	mComputeDescriptorSets.clear();
-	mComputeDescriptorSets = mDevice.allocateDescriptorSets(allocInfo);
+	DescriptorSetWriter writer(mDevice);
+	writer.reserve(MAX_FRAMES_IN_FLIGHT * 3);
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		vk::DescriptorBufferInfo bufferInfo{
-			.buffer = *mUniformBuffers[i],
-			.offset = 0,
-			.range = mUniformBuffers[i].size()
-		};
+		writer.writeBuffer(
+			*mComputeDescriptorSets[i],
+			0,
+			vk::DescriptorType::eUniformBuffer,
+			**mUniformBuffers[i],
+			0,
+			mUniformBuffers[i].size()).
+		writeBuffer(
+			*mComputeDescriptorSets[i],
+			1,
+			vk::DescriptorType::eStorageBuffer,
+			**mShaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT],
+			0,
+			sizeof(Particle) * PARTICLE_COUNT).
+		writeBuffer(
+			*mComputeDescriptorSets[i],
+			2,
+			vk::DescriptorType::eStorageBuffer,
+			**mShaderStorageBuffers[i],
+			0,
+			sizeof(Particle) * PARTICLE_COUNT);
 
-		vk::DescriptorBufferInfo storageBufferInfoLastFrame{
-			.buffer = *mShaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT],
-			.offset = 0,
-			.range = sizeof(Particle) * PARTICLE_COUNT
-		};
-		vk::DescriptorBufferInfo storageBufferInfoCurrentFrame{
-			.buffer = *mShaderStorageBuffers[i],
-			.offset = 0,
-			.range = sizeof(Particle) * PARTICLE_COUNT
-		};
-		std::array<vk::WriteDescriptorSet, 3> descriptorWrites{
-			vk::WriteDescriptorSet{
-				.dstSet = *mComputeDescriptorSets[i],
-				.dstBinding = 0,
-				.dstArrayElement = 0,
-				.descriptorCount = 1,
-				.descriptorType = vk::DescriptorType::eUniformBuffer,
-				.pImageInfo = nullptr,
-				.pBufferInfo = &bufferInfo,
-				.pTexelBufferView = nullptr
-			},
-			vk::WriteDescriptorSet{
-				.dstSet = *mComputeDescriptorSets[i],
-				.dstBinding = 1,
-				.dstArrayElement = 0,
-				.descriptorCount = 1,
-				.descriptorType = vk::DescriptorType::eStorageBuffer,
-				.pImageInfo = nullptr,
-				.pBufferInfo = &storageBufferInfoLastFrame,
-				.pTexelBufferView = nullptr
-			},
-			vk::WriteDescriptorSet{
-				.dstSet = *mComputeDescriptorSets[i],
-				.dstBinding = 2,
-				.dstArrayElement = 0,
-				.descriptorCount = 1,
-				.descriptorType = vk::DescriptorType::eStorageBuffer,
-				.pImageInfo = nullptr,
-				.pBufferInfo = &storageBufferInfoCurrentFrame,
-				.pTexelBufferView = nullptr
-			},
-		};
-
-		mDevice.updateDescriptorSets(descriptorWrites, {});
+		writer.update();
 	}
 }
 

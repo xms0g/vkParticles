@@ -22,5 +22,4 @@ private:
 	std::vector<vk::DescriptorSetLayoutBinding> mBindings;
 	const vk::raii::Device& mDevice;
 	vk::raii::DescriptorSetLayout mDescriptorSetLayout{nullptr};
-
 };
