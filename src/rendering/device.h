@@ -32,6 +32,9 @@ public:
 	void waitIdle() const;
 
 private:
+	// Getters
+	void getPhysicalDevice();
+
 	void createInstance();
 
 	void setupDebugMessenger();
@@ -61,9 +64,6 @@ private:
 	void recordComputeCommandBuffer(float deltaTime);
 
 	void createSyncObjects();
-
-	// Getters
-	void getPhysicalDevice();
 
 	// Support Functions
 	static std::vector<const char*> getRequiredInstanceExtensions();

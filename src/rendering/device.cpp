@@ -106,6 +106,21 @@ void Device::waitIdle() const {
 	mDevice.waitIdle();
 }
 
+void Device::getPhysicalDevice() {
+	const auto physicalDevices = mInstance.enumeratePhysicalDevices();
+
+	if (physicalDevices.empty()) {
+		throw std::runtime_error("Failed to find GPUs with Vulkan support!");
+	}
+
+	const auto deviceIt = std::ranges::find_if(
+		physicalDevices, [&](const auto& phyDevice) { return checkDeviceSuitable(phyDevice); });
+
+	if (deviceIt != physicalDevices.end()) {
+		mPhysicalDevice = *deviceIt;
+	}
+}
+
 void Device::createInstance() {
 	constexpr vk::ApplicationInfo appInfo{
 		.pApplicationName = "Particle Simulation",
@@ -459,21 +474,6 @@ void Device::createSyncObjects() {
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 		vk::FenceCreateInfo fenceInfo{};
 		mFences.emplace_back(mDevice, fenceInfo);
-	}
-}
-
-void Device::getPhysicalDevice() {
-	const auto physicalDevices = mInstance.enumeratePhysicalDevices();
-
-	if (physicalDevices.empty()) {
-		throw std::runtime_error("Failed to find GPUs with Vulkan support!");
-	}
-
-	const auto deviceIt = std::ranges::find_if(
-		physicalDevices, [&](const auto& phyDevice) { return checkDeviceSuitable(phyDevice); });
-
-	if (deviceIt != physicalDevices.end()) {
-		mPhysicalDevice = *deviceIt;
 	}
 }
 
