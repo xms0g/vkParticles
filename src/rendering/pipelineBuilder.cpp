@@ -122,19 +122,24 @@ PipelineBuilder& PipelineBuilder::alphaBlending() {
 vk::raii::PipelineLayout PipelineBuilder::createPipelineLayout(
 	const vk::DescriptorSetLayout* dscSetLayout,
 	const uint32_t dscSetLayoutCount,
-	const uint32_t pushConstantSize) const {
-	const vk::PushConstantRange pushConstantRange = {
-		.stageFlags = vk::ShaderStageFlagBits::eCompute,
-		.offset = 0,
-		.size = pushConstantSize
-	};
-
-	const vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
+	const uint32_t pushConstantSize,
+	const vk::ShaderStageFlags stages) const {
+	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
 		.setLayoutCount = dscSetLayoutCount,
 		.pSetLayouts = dscSetLayout,
-		.pushConstantRangeCount = 1,
-		.pPushConstantRanges = &pushConstantRange
 	};
+
+	if (pushConstantSize > 0) {
+		const vk::PushConstantRange pushConstantRange{
+			.stageFlags = stages,
+			.offset = 0,
+			.size = pushConstantSize
+		};
+
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+	}
+
 
 	return vk::raii::PipelineLayout(mDevice, pipelineLayoutInfo);
 }
@@ -207,6 +212,11 @@ ComputePipeline::ComputePipeline(
 	const uint32_t pushConstantSize) {
 	builder.addComputeShader("compMain");
 
-	mPipelineLayout = builder.createPipelineLayout(&**dscSetLayout, dscSetLayoutCount, pushConstantSize);
+	mPipelineLayout = builder.createPipelineLayout(
+		&**dscSetLayout,
+		dscSetLayoutCount,
+		pushConstantSize,
+		vk::ShaderStageFlagBits::eCompute);
+
 	mPipeline = builder.buildCompute(mPipelineLayout);
 }

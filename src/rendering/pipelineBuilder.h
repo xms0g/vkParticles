@@ -38,7 +38,8 @@ public:
 	vk::raii::PipelineLayout createPipelineLayout(
 		const vk::DescriptorSetLayout* dscSetLayout = nullptr,
 		uint32_t dscSetLayoutCount = 0,
-		uint32_t pushConstantSize = 4) const;
+		uint32_t pushConstantSize = 0,
+		vk::ShaderStageFlags stages = {}) const;
 
 	vk::raii::Pipeline buildGraphics(vk::SurfaceFormatKHR& surfaceFormat, const vk::raii::PipelineLayout& layout);
 
