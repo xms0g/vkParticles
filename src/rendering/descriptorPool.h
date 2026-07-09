@@ -9,7 +9,7 @@ public:
 
 	DescriptorPool& addMaxSets(uint32_t count);
 
-	DescriptorPool& addPoolFlags(vk::DescriptorPoolCreateFlagBits flags);
+	DescriptorPool& addPoolFlags(vk::DescriptorPoolCreateFlags flags);
 
 	DescriptorPool& addPoolSize(vk::DescriptorType type, uint32_t count);
 

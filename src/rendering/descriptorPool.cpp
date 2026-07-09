@@ -8,7 +8,7 @@ DescriptorPool& DescriptorPool::addMaxSets(const uint32_t count) {
 	return *this;
 }
 
-DescriptorPool& DescriptorPool::addPoolFlags(const vk::DescriptorPoolCreateFlagBits flags) {
+DescriptorPool& DescriptorPool::addPoolFlags(const vk::DescriptorPoolCreateFlags flags) {
 	mPoolFlags = flags;
 	return *this;
 }
