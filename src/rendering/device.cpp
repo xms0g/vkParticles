@@ -324,7 +324,7 @@ void Device::createComputeDescriptorSets() {
 	mComputeDescriptorSets = allocator.allocate(MAX_FRAMES_IN_FLIGHT, **mComputeDescriptorSetLayout);
 
 	DescriptorSetWriter writer(mDevice);
-	writer.reserve(MAX_FRAMES_IN_FLIGHT * 3);
+	writer.reserve(MAX_FRAMES_IN_FLIGHT * 2);
 
 	constexpr vk::DeviceSize bufferSize = sizeof(Particle) * PARTICLE_COUNT;
 
