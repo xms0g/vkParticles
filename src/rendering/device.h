@@ -22,10 +22,10 @@ public:
 
 	void init();
 
-	void prepareFrame(float deltaTime);
+	void prepareFrame();
 
 	template<QueueType T>
-	void submit();
+	void submit(float deltaTime);
 
 	void presentFrame();
 
@@ -50,8 +50,6 @@ private:
 
 	void createDescriptorPool();
 
-	void createUniformBuffers();
-
 	void createShaderStorageBuffers();
 
 	void createComputeDescriptorSets();
@@ -60,7 +58,7 @@ private:
 
 	void recordGraphicsCommandBuffer(uint32_t imageIndex);
 
-	void recordComputeCommandBuffer();
+	void recordComputeCommandBuffer(float deltaTime);
 
 	void createSyncObjects();
 
@@ -80,14 +78,12 @@ private:
 
 	void copyBuffer(const Buffer& dstBuffer, const Buffer& srcBuffer, vk::DeviceSize size) const;
 
-	void updateUniformBuffer(uint32_t currentImage, float deltaTime) const;
-
 	[[nodiscard]]
 	vk::raii::CommandBuffer beginSingleTimeCommands() const;
 
 	void endSingleTimeCommands(const vk::raii::CommandBuffer& commandBuffer) const;
 
-	struct UniformBufferObject {
+	struct ComputePushConstants {
 		float deltaTime{1.0f};
 	};
 
@@ -105,7 +101,6 @@ private:
 	std::vector<vk::raii::DescriptorSet> mComputeDescriptorSets;
 	std::unique_ptr<Pipeline> mGraphicsPipeline{nullptr};
 	std::unique_ptr<Pipeline> mComputePipeline{nullptr};
-	std::vector<Buffer> mUniformBuffers;
 	std::vector<Buffer> mShaderStorageBuffers;
 	std::unique_ptr<CommandPool> mCommandPool;
 	std::vector<CommandBuffer> mGraphicsCommandBuffers;
@@ -123,14 +118,14 @@ private:
 };
 
 template<QueueType T>
-void Device::submit() {
+void Device::submit(const float deltaTime) {
 	const CommandBuffer* commandBuffer;
 	uint64_t waitValue;
 	uint64_t signalValue;
 	vk::PipelineStageFlags waitStage;
 
 	if constexpr (T == QueueType::Compute) {
-		recordComputeCommandBuffer();
+		recordComputeCommandBuffer(deltaTime);
 		commandBuffer = &mComputeCommandBuffers[mFrameIndex];
 		waitValue = mComputeWaitValue;
 		signalValue = mComputeSignalValue;

@@ -30,10 +30,10 @@ float4 fragMain(PSInput input) : SV_TARGET {
     return float4(input.fragColor, 0.5 - length(coord));
 }
 
-struct UniformBuffer {
+struct PushConstants {
     float deltaTime;
 };
-ConstantBuffer<UniformBuffer> ubo;
+[[vk::push_constant]] PushConstants pc;
 
 struct Particle {
 	float2 position;
@@ -52,9 +52,9 @@ void compMain(uint3 threadId : SV_DispatchThreadID) {
     Particle p = particlesIn[index];
     const float2 gravity = float2(0.0, 0.5);
     // Integrate velocity
-    p.velocity += gravity * ubo.deltaTime;
+    p.velocity += gravity * pc.deltaTime;
     // Integrate position
-    p.position += p.velocity * ubo.deltaTime;
+    p.position += p.velocity * pc.deltaTime;
 
     // Bounce on X borders
     if (p.position.x <= -1.0) {

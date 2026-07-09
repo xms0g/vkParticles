@@ -18,7 +18,7 @@ public:
 
 	PipelineBuilder& addFragmentShader(const std::string& entry);
 
-	PipelineBuilder& addComputeShader( const std::string& entry);
+	PipelineBuilder& addComputeShader(const std::string& entry);
 
 	PipelineBuilder& vertexInput(const VertexLayout& layout);
 
@@ -35,7 +35,10 @@ public:
 
 	PipelineBuilder& alphaBlending();
 
-	vk::raii::PipelineLayout createPipelineLayout(const vk::DescriptorSetLayout* dsc = nullptr , uint32_t count = 0) const;
+	vk::raii::PipelineLayout createPipelineLayout(
+		const vk::DescriptorSetLayout* dscSetLayout = nullptr,
+		uint32_t dscSetLayoutCount = 0,
+		uint32_t pushConstantSize = 4) const;
 
 	vk::raii::Pipeline buildGraphics(vk::SurfaceFormatKHR& surfaceFormat, const vk::raii::PipelineLayout& layout);
 
@@ -84,5 +87,9 @@ public:
 
 class ComputePipeline : public Pipeline {
 public:
-	ComputePipeline(PipelineBuilder& builder, DescriptorSetLayout& dscSetLayout, uint32_t dscSetLayoutCount);
+	ComputePipeline(
+		PipelineBuilder& builder,
+		DescriptorSetLayout& dscSetLayout,
+		uint32_t dscSetLayoutCount,
+		uint32_t pushConstantSize);
 };

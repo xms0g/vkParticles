@@ -42,7 +42,6 @@ void Device::init() {
 		createPipelines();
 		createCommandPool();
 		createShaderStorageBuffers();
-		createUniformBuffers();
 		createDescriptorPool();
 		createComputeDescriptorSets();
 		createCommandBuffers();
@@ -52,7 +51,7 @@ void Device::init() {
 	}
 }
 
-void Device::prepareFrame(const float deltaTime) {
+void Device::prepareFrame() {
 	mImageIndex = mSwapchain->acquireNextImage(mFences[mFrameIndex]);
 
 	auto fenceResult = mDevice.waitForFences(*mFences[mFrameIndex], vk::True, UINT64_MAX);
@@ -66,8 +65,6 @@ void Device::prepareFrame(const float deltaTime) {
 	mComputeSignalValue = ++mTimelineValue;
 	mGraphicsWaitValue = mComputeSignalValue;
 	mGraphicsSignalValue = ++mTimelineValue;
-
-	updateUniformBuffer(mFrameIndex, deltaTime);
 }
 
 void Device::presentFrame() {
@@ -254,9 +251,8 @@ void Device::createSwapchain() {
 
 void Device::createDescriptorSetLayout() {
 	mComputeDescriptorSetLayout = std::make_unique<DescriptorSetLayout>(mDevice);
-	mComputeDescriptorSetLayout->addBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eCompute)
+	mComputeDescriptorSetLayout->addBinding(0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute)
 			.addBinding(1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute)
-			.addBinding(2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute)
 			.build();
 }
 
@@ -265,7 +261,11 @@ void Device::createPipelines() {
 
 	mGraphicsPipeline = std::make_unique<GraphicsPipeline>(builder, *mSwapchain, Particle::layout());
 	builder.reset();
-	mComputePipeline = std::make_unique<ComputePipeline>(builder, *mComputeDescriptorSetLayout, 1);
+	mComputePipeline = std::make_unique<ComputePipeline>(
+		builder,
+		*mComputeDescriptorSetLayout,
+		1,
+		sizeof(ComputePushConstants));
 }
 
 void Device::createCommandPool() {
@@ -282,22 +282,6 @@ void Device::createDescriptorPool() {
 			.addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
 			.addPoolSize(vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2)
 			.build();
-}
-
-void Device::createUniformBuffers() {
-	mUniformBuffers.clear();
-
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		constexpr vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
-		mUniformBuffers.emplace_back(
-			bufferSize,
-			mDevice,
-			mPhysicalDevice,
-			vk::BufferUsageFlagBits::eUniformBuffer,
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-
-		mUniformBuffers[i].map(bufferSize);
-	}
 }
 
 void Device::createShaderStorageBuffers() {
@@ -347,20 +331,13 @@ void Device::createComputeDescriptorSets() {
 		writer.writeBuffer(
 					*mComputeDescriptorSets[i],
 					0,
-					vk::DescriptorType::eUniformBuffer,
-					**mUniformBuffers[i],
-					0,
-					mUniformBuffers[i].size())
-				.writeBuffer(
-					*mComputeDescriptorSets[i],
-					1,
 					vk::DescriptorType::eStorageBuffer,
 					**mShaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT],
 					0,
 					sizeof(Particle) * PARTICLE_COUNT)
 				.writeBuffer(
 					*mComputeDescriptorSets[i],
-					2,
+					1,
 					vk::DescriptorType::eStorageBuffer,
 					**mShaderStorageBuffers[i],
 					0,
@@ -444,7 +421,7 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	(*commandBuffer).end();
 }
 
-void Device::recordComputeCommandBuffer() {
+void Device::recordComputeCommandBuffer(const float deltaTime) {
 	const auto& commandBuffer = mComputeCommandBuffers[mFrameIndex];
 	(*commandBuffer).reset();
 	(*commandBuffer).begin({});
@@ -454,6 +431,16 @@ void Device::recordComputeCommandBuffer() {
 		mComputePipeline->layout(),
 		0,
 		{mComputeDescriptorSets[mFrameIndex]}, {});
+
+	const ComputePushConstants pc{
+		.deltaTime = deltaTime,
+	};
+
+	(*commandBuffer).pushConstants(
+		mComputePipeline->layout(),
+		vk::ShaderStageFlagBits::eCompute,
+		0,
+		vk::ArrayProxy<const ComputePushConstants>(pc));
 	(*commandBuffer).dispatch(PARTICLE_COUNT / 256, 1, 1);
 	(*commandBuffer).end();
 }
@@ -557,13 +544,6 @@ void Device::copyBuffer(const Buffer& dstBuffer, const Buffer& srcBuffer, const 
 	const vk::raii::CommandBuffer commandCopyBuffer = beginSingleTimeCommands();
 	commandCopyBuffer.copyBuffer(*srcBuffer, *dstBuffer, vk::BufferCopy(0, 0, size));
 	endSingleTimeCommands(commandCopyBuffer);
-}
-
-void Device::updateUniformBuffer(const uint32_t currentImage, const float deltaTime) const {
-	UniformBufferObject ubo{};
-	ubo.deltaTime = static_cast<float>(deltaTime) * 2.0f;
-
-	memcpy(mUniformBuffers[currentImage].mappedMemory(), &ubo, sizeof(ubo));
 }
 
 vk::raii::CommandBuffer Device::beginSingleTimeCommands() const {
