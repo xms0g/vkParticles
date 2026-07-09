@@ -29,6 +29,9 @@ public:
 	template<vk::DynamicState T>
 	PipelineBuilder& dynamicState();
 
+	template<vk::DynamicState... States>
+	PipelineBuilder& dynamicStates();
+
 	PipelineBuilder& rasterizer();
 
 	PipelineBuilder& multisampling();
@@ -43,6 +46,7 @@ public:
 
 	vk::raii::Pipeline buildGraphics(vk::SurfaceFormatKHR& surfaceFormat, const vk::raii::PipelineLayout& layout);
 
+	[[nodiscard]]
 	vk::raii::Pipeline buildCompute(const vk::raii::PipelineLayout& layout) const;
 
 private:
@@ -64,6 +68,12 @@ private:
 template<vk::DynamicState T>
 PipelineBuilder& PipelineBuilder::dynamicState() {
 	mDynamicStates.push_back(T);
+	return *this;
+}
+
+template<vk::DynamicState... States>
+PipelineBuilder& PipelineBuilder::dynamicStates() {
+	(mDynamicStates.push_back(States), ...);
 	return *this;
 }
 

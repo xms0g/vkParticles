@@ -195,8 +195,7 @@ GraphicsPipeline::GraphicsPipeline(PipelineBuilder& builder, Swapchain& swapchai
 			.vertexInput(layout)
 			.topology(vk::PrimitiveTopology::ePointList)
 			.viewportState(1, 1)
-			.dynamicState<vk::DynamicState::eViewport>()
-			.dynamicState<vk::DynamicState::eScissor>()
+			.dynamicStates<vk::DynamicState::eViewport, vk::DynamicState::eScissor>()
 			.rasterizer()
 			.multisampling()
 			.alphaBlending();
