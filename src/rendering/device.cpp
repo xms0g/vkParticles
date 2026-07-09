@@ -327,6 +327,8 @@ void Device::createComputeDescriptorSets() {
 	DescriptorSetWriter writer(mDevice);
 	writer.reserve(MAX_FRAMES_IN_FLIGHT * 3);
 
+	constexpr size_t bufferSize = sizeof(Particle) * PARTICLE_COUNT;
+
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 		writer.writeBuffer(
 					*mComputeDescriptorSets[i],
@@ -334,14 +336,14 @@ void Device::createComputeDescriptorSets() {
 					vk::DescriptorType::eStorageBuffer,
 					**mShaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT],
 					0,
-					sizeof(Particle) * PARTICLE_COUNT)
+					bufferSize)
 				.writeBuffer(
 					*mComputeDescriptorSets[i],
 					1,
 					vk::DescriptorType::eStorageBuffer,
 					**mShaderStorageBuffers[i],
 					0,
-					sizeof(Particle) * PARTICLE_COUNT);
+					bufferSize);
 
 		writer.update();
 	}
