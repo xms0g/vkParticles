@@ -45,8 +45,8 @@ struct Particle {
 
 static const float2 GRAVITY = float2(0.0, 0.5);
 
-StructuredBuffer<Particle> particlesIn;
-RWStructuredBuffer<Particle> particlesOut;
+[[vk::binding(0, 0)]] StructuredBuffer<Particle> particlesIn;
+[[vk::binding(1, 0)]] RWStructuredBuffer<Particle> particlesOut;
 
 [shader("compute")]
 [numthreads(256,1,1)]
