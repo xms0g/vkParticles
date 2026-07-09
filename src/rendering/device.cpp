@@ -542,8 +542,7 @@ bool Device::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 	bool supportsShaderDrawParameters = features2.get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters;
 	bool supportsDynamicRendering = features2.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering;
 	bool supportsSynchronization2 = features2.get<vk::PhysicalDeviceVulkan13Features>().synchronization2;
-	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().
-			extendedDynamicState;
+	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
 	bool supportsRequiredFeatures =
 			supportsSamplerAnisotropy &&
 			supportsShaderDrawParameters &&

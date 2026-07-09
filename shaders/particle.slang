@@ -41,25 +41,38 @@ struct Particle {
     float4 color;
 };
 
-struct ParticleSSBO {
-    Particle particles;
-};
-StructuredBuffer<ParticleSSBO> particlesIn;
-RWStructuredBuffer<ParticleSSBO> particlesOut;
+StructuredBuffer<Particle> particlesIn;
+RWStructuredBuffer<Particle> particlesOut;
 
 [shader("compute")]
 [numthreads(256,1,1)]
 void compMain(uint3 threadId : SV_DispatchThreadID) {
     uint index = threadId.x;
 
-    particlesOut[index].particles.position = particlesIn[index].particles.position + particlesIn[index].particles.velocity.xy * ubo.deltaTime;
-    particlesOut[index].particles.velocity = particlesIn[index].particles.velocity;
+    Particle p = particlesIn[index];
+    const float2 gravity = float2(0.0, 0.5);
+    // Integrate velocity
+    p.velocity += gravity * ubo.deltaTime;
+    // Integrate position
+    p.position += p.velocity * ubo.deltaTime;
 
-    // Flip movement at window border
-    if ((particlesOut[index].particles.position.x <= -1.0) || (particlesOut[index].particles.position.x >= 1.0)) {
-        particlesOut[index].particles.velocity.x = -particlesOut[index].particles.velocity.x;
+    // Bounce on X borders
+    if (p.position.x <= -1.0) {
+        p.position.x = -1.0;
+        p.velocity.x *= -0.8;
+    } else if (p.position.x >= 1.0) {
+        p.position.x = 1.0;
+        p.velocity.x *= -0.8;
     }
-    if ((particlesOut[index].particles.position.y <= -1.0) || (particlesOut[index].particles.position.y >= 1.0)) {
-        particlesOut[index].particles.velocity.y = -particlesOut[index].particles.velocity.y;
+
+    // Bounce on Y borders
+    if (p.position.y <= -1.0) {
+        p.position.y = -1.0;
+        p.velocity.y *= -0.8;
+    } else if (p.position.y >= 1.0) {
+        p.position.y = 1.0;
+        p.velocity.y *= -0.8;
     }
+
+    particlesOut[index] = p;
 }

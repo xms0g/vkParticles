@@ -1,5 +1,4 @@
 #include "pipelineBuilder.h"
-#include "shader.h"
 #include "swapchain.h"
 #include "descriptorSetLayout.h"
 
@@ -67,7 +66,7 @@ PipelineBuilder& PipelineBuilder::topology(const vk::PrimitiveTopology topology)
 	return *this;
 }
 
-PipelineBuilder& PipelineBuilder::viewportState(uint32_t viewportCount, uint32_t scissorCount) {
+PipelineBuilder& PipelineBuilder::viewportState(const uint32_t viewportCount, const uint32_t scissorCount) {
 	mViewportState.viewportCount = viewportCount;
 	mViewportState.scissorCount = scissorCount;
 
