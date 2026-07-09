@@ -15,10 +15,12 @@ struct PSInput {
     float2 pointCoord : SV_PointCoord;
 };
 
+static const float POINT_SIZE = 14.0;
+
 [shader("vertex")]
 VSOutput vertMain(VSInput input) {
     VSOutput output;
-    output.pointSize = 14.0;
+    output.pointSize = POINT_SIZE;
     output.pos = float4(input.inPosition, 1.0, 1.0);
     output.fragColor = input.inColor.rgb;
     return output;
@@ -41,6 +43,8 @@ struct Particle {
     float4 color;
 };
 
+static const float2 GRAVITY = float2(0.0, 0.5);
+
 StructuredBuffer<Particle> particlesIn;
 RWStructuredBuffer<Particle> particlesOut;
 
@@ -50,9 +54,9 @@ void compMain(uint3 threadId : SV_DispatchThreadID) {
     uint index = threadId.x;
 
     Particle p = particlesIn[index];
-    const float2 gravity = float2(0.0, 0.5);
+
     // Integrate velocity
-    p.velocity += gravity * pc.deltaTime;
+    p.velocity += GRAVITY * pc.deltaTime;
     // Integrate position
     p.position += p.velocity * pc.deltaTime;
 
