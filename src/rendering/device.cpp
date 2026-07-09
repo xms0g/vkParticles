@@ -20,7 +20,6 @@
 #include "deviceExtension.hpp"
 #include "image.h"
 #include "pipelineBuilder.h"
-#include "shader.h"
 #include "validation.hpp"
 #include "../core/window.h"
 #include "../config/config.hpp"
@@ -259,7 +258,7 @@ void Device::createDescriptorSetLayout() {
 void Device::createPipelines() {
 	PipelineBuilder builder{mDevice, std::string(SHADER_BINARY_DIR) + SHADER_NAME};
 
-	mGraphicsPipeline = std::make_unique<GraphicsPipeline>(builder, *mSwapchain, Particle::layout());
+	mGraphicsPipeline = std::make_unique<GraphicsPipeline>(builder, mSwapchain->surfaceFormat(), Particle::layout());
 	builder.reset();
 	mComputePipeline = std::make_unique<ComputePipeline>(
 		builder,

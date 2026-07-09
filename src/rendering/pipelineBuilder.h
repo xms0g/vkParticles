@@ -93,7 +93,7 @@ protected:
 
 class GraphicsPipeline : public Pipeline {
 public:
-	GraphicsPipeline(PipelineBuilder& builder, Swapchain& swapchain, const VertexLayout& layout);
+	GraphicsPipeline(PipelineBuilder& builder, vk::SurfaceFormatKHR& surfaceFormat, const VertexLayout& layout);
 };
 
 class ComputePipeline : public Pipeline {

@@ -189,7 +189,7 @@ vk::raii::Pipeline PipelineBuilder::buildCompute(const vk::raii::PipelineLayout&
 	return vk::raii::Pipeline(mDevice, nullptr, pipelineInfo);
 }
 
-GraphicsPipeline::GraphicsPipeline(PipelineBuilder& builder, Swapchain& swapchain, const VertexLayout& layout) {
+GraphicsPipeline::GraphicsPipeline(PipelineBuilder& builder, vk::SurfaceFormatKHR& surfaceFormat, const VertexLayout& layout) {
 	builder.addVertexShader("vertMain")
 			.addFragmentShader("fragMain")
 			.vertexInput(layout)
@@ -201,7 +201,7 @@ GraphicsPipeline::GraphicsPipeline(PipelineBuilder& builder, Swapchain& swapchai
 			.alphaBlending();
 
 	mPipelineLayout = builder.createPipelineLayout();
-	mPipeline = builder.buildGraphics(swapchain.surfaceFormat(), mPipelineLayout);
+	mPipeline = builder.buildGraphics(surfaceFormat, mPipelineLayout);
 }
 
 ComputePipeline::ComputePipeline(
