@@ -457,7 +457,7 @@ void Device::recordComputeCommandBuffer(const float deltaTime) {
 		vk::ShaderStageFlagBits::eCompute,
 		0,
 		vk::ArrayProxy<const ComputePushConstants>(pc));
-	(*commandBuffer).dispatch(PARTICLE_COUNT / THREADS_PER_GROUP, 1, 1);
+	(*commandBuffer).dispatch((PARTICLE_COUNT + THREADS_PER_GROUP - 1) / THREADS_PER_GROUP, 1, 1);
 	(*commandBuffer).end();
 }
 

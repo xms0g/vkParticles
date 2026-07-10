@@ -53,6 +53,15 @@ static const float2 GRAVITY = float2(0.0, 0.5);
 void compMain(uint3 threadId : SV_DispatchThreadID) {
     uint index = threadId.x;
 
+    uint count;
+    uint stride;
+
+    particlesIn.GetDimensions(count, stride);
+
+    if (index >= count) {
+        return;
+    }
+
     Particle p = particlesIn[index];
 
     // Integrate velocity
