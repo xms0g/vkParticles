@@ -26,6 +26,11 @@ public:
 	const vk::raii::Buffer& operator*() const noexcept { return mBuffer; }
 
 private:
+	static uint32_t findMemoryType(
+		uint32_t typeFilter,
+		vk::MemoryPropertyFlags properties,
+		const vk::raii::PhysicalDevice& phyDev);
+
 	vk::DeviceSize mSize;
 	vk::raii::Buffer mBuffer{nullptr};
 	vk::raii::DeviceMemory mBufferMemory{nullptr};
