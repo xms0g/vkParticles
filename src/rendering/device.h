@@ -3,11 +3,10 @@
 #include <vulkan/vulkan_raii.hpp>
 #include "commandBuffer.h"
 
-class Pipeline;
-class DescriptorSetLayout;
-
 enum class QueueType { Graphics, Compute };
 
+class Pipeline;
+class DescriptorSetLayout;
 class CommandPool;
 class DescriptorPool;
 class Swapchain;
