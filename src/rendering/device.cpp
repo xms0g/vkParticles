@@ -271,12 +271,14 @@ void Device::createDescriptorSetLayout() {
 }
 
 void Device::createPipelines() {
-	PipelineBuilder builder{mDevice, std::string(SHADER_BINARY_DIR) + SHADER_NAME};
+	PipelineBuilder builder{mDevice};
+	Shader shader{mDevice, std::string(SHADER_BINARY_DIR) + SHADER_NAME};
 
-	mGraphicsPipeline = std::make_unique<GraphicsPipeline>(builder, mSwapchain->surfaceFormat(), Particle::layout());
+	mGraphicsPipeline = std::make_unique<GraphicsPipeline>(builder, shader, mSwapchain->surfaceFormat(), Particle::layout());
 	builder.reset();
 	mComputePipeline = std::make_unique<ComputePipeline>(
 		builder,
+		shader,
 		*mComputeDescriptorSetLayout,
 		1,
 		sizeof(ComputePushConstants));

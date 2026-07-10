@@ -2,9 +2,7 @@
 #include "swapchain.h"
 #include "descriptorSetLayout.h"
 
-PipelineBuilder::PipelineBuilder(const vk::raii::Device& device, const std::string& shaderPath)
-	: mShader(device, shaderPath),
-	  mDevice(device) {
+PipelineBuilder::PipelineBuilder(const vk::raii::Device& device) : mDevice(device) {
 }
 
 void PipelineBuilder::reset() {
@@ -12,10 +10,10 @@ void PipelineBuilder::reset() {
 	mDynamicStates.clear();
 }
 
-PipelineBuilder& PipelineBuilder::addVertexShader(const std::string& entry) {
+PipelineBuilder& PipelineBuilder::addVertexShader(Shader& shader, const std::string& entry) {
 	const vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
 		.stage = vk::ShaderStageFlagBits::eVertex,
-		.module = *mShader,
+		.module = *shader,
 		.pName = entry.c_str()
 	};
 
@@ -23,10 +21,10 @@ PipelineBuilder& PipelineBuilder::addVertexShader(const std::string& entry) {
 	return *this;
 }
 
-PipelineBuilder& PipelineBuilder::addFragmentShader(const std::string& entry) {
+PipelineBuilder& PipelineBuilder::addFragmentShader(Shader& shader, const std::string& entry) {
 	const vk::PipelineShaderStageCreateInfo fragShaderStageInfo{
 		.stage = vk::ShaderStageFlagBits::eFragment,
-		.module = *mShader,
+		.module = *shader,
 		.pName = entry.c_str()
 	};
 
@@ -34,10 +32,10 @@ PipelineBuilder& PipelineBuilder::addFragmentShader(const std::string& entry) {
 	return *this;
 }
 
-PipelineBuilder& PipelineBuilder::addComputeShader(const std::string& entry) {
+PipelineBuilder& PipelineBuilder::addComputeShader(Shader& shader, const std::string& entry) {
 	const vk::PipelineShaderStageCreateInfo computeShaderStageInfo{
 		.stage = vk::ShaderStageFlagBits::eCompute,
-		.module = *mShader,
+		.module = *shader,
 		.pName = entry.c_str()
 	};
 
@@ -46,14 +44,11 @@ PipelineBuilder& PipelineBuilder::addComputeShader(const std::string& entry) {
 }
 
 PipelineBuilder& PipelineBuilder::vertexInput(const VertexLayout& layout) {
-	mVertexLayout.bindingDescription = layout.bindingDescription;
-	mVertexLayout.attributeDescriptions = layout.attributeDescriptions;
-
 	mVertexInputInfo = {
 		.vertexBindingDescriptionCount = 1,
-		.pVertexBindingDescriptions = &mVertexLayout.bindingDescription,
-		.vertexAttributeDescriptionCount = static_cast<uint32_t>(mVertexLayout.attributeDescriptions.size()),
-		.pVertexAttributeDescriptions = mVertexLayout.attributeDescriptions.data()
+		.pVertexBindingDescriptions = &layout.bindingDescription,
+		.vertexAttributeDescriptionCount = static_cast<uint32_t>(layout.attributeDescriptions.size()),
+		.pVertexAttributeDescriptions = layout.attributeDescriptions.data()
 	};
 
 	return *this;
@@ -189,10 +184,15 @@ vk::raii::Pipeline PipelineBuilder::buildCompute(const vk::raii::PipelineLayout&
 	return vk::raii::Pipeline(mDevice, nullptr, pipelineInfo);
 }
 
-GraphicsPipeline::GraphicsPipeline(PipelineBuilder& builder, vk::SurfaceFormatKHR& surfaceFormat, const VertexLayout& layout) {
-	builder.addVertexShader("vertMain")
-			.addFragmentShader("fragMain")
-			.vertexInput(layout)
+GraphicsPipeline::GraphicsPipeline(
+	PipelineBuilder& builder, Shader& shader,
+	vk::SurfaceFormatKHR& surfaceFormat,
+	const VertexLayout& layout) {
+	mVertexLayout = layout;
+
+	builder.addVertexShader(shader, "vertMain")
+			.addFragmentShader(shader, "fragMain")
+			.vertexInput(mVertexLayout)
 			.topology(vk::PrimitiveTopology::ePointList)
 			.viewportState(1, 1)
 			.dynamicStates<vk::DynamicState::eViewport, vk::DynamicState::eScissor>()
@@ -206,10 +206,11 @@ GraphicsPipeline::GraphicsPipeline(PipelineBuilder& builder, vk::SurfaceFormatKH
 
 ComputePipeline::ComputePipeline(
 	PipelineBuilder& builder,
+	Shader& shader,
 	DescriptorSetLayout& dscSetLayout,
 	const uint32_t dscSetLayoutCount,
 	const uint32_t pushConstantSize) {
-	builder.addComputeShader("compMain");
+	builder.addComputeShader(shader, "compMain");
 
 	mPipelineLayout = builder.createPipelineLayout(
 		&**dscSetLayout,

@@ -10,15 +10,15 @@ class Shader;
 
 class PipelineBuilder {
 public:
-	explicit PipelineBuilder(const vk::raii::Device& device, const std::string& shaderPath);
+	explicit PipelineBuilder(const vk::raii::Device& device);
 
 	void reset();
 
-	PipelineBuilder& addVertexShader(const std::string& entry);
+	PipelineBuilder& addVertexShader(Shader& shader, const std::string& entry);
 
-	PipelineBuilder& addFragmentShader(const std::string& entry);
+	PipelineBuilder& addFragmentShader(Shader& shader, const std::string& entry);
 
-	PipelineBuilder& addComputeShader(const std::string& entry);
+	PipelineBuilder& addComputeShader(Shader& shader, const std::string& entry);
 
 	PipelineBuilder& vertexInput(const VertexLayout& layout);
 
@@ -50,7 +50,6 @@ public:
 	vk::raii::Pipeline buildCompute(const vk::raii::PipelineLayout& layout) const;
 
 private:
-	Shader mShader;
 	vk::PipelineInputAssemblyStateCreateInfo mInputAssembly;
 	vk::PipelineViewportStateCreateInfo mViewportState;
 	vk::PipelineRasterizationStateCreateInfo mRasterizer;
@@ -59,7 +58,6 @@ private:
 	vk::PipelineColorBlendStateCreateInfo mColorBlending;
 	vk::PipelineDynamicStateCreateInfo mDynamicState;
 	vk::PipelineVertexInputStateCreateInfo mVertexInputInfo;
-	VertexLayout mVertexLayout;
 	std::vector<vk::PipelineShaderStageCreateInfo> mShaderStages;
 	std::vector<vk::DynamicState> mDynamicStates;
 	const vk::raii::Device& mDevice;
@@ -93,13 +91,17 @@ protected:
 
 class GraphicsPipeline : public Pipeline {
 public:
-	GraphicsPipeline(PipelineBuilder& builder, vk::SurfaceFormatKHR& surfaceFormat, const VertexLayout& layout);
+	GraphicsPipeline(PipelineBuilder& builder, Shader& shader, vk::SurfaceFormatKHR& surfaceFormat, const VertexLayout& layout);
+
+private:
+	VertexLayout mVertexLayout;
 };
 
 class ComputePipeline : public Pipeline {
 public:
 	ComputePipeline(
 		PipelineBuilder& builder,
+		Shader& shader,
 		DescriptorSetLayout& dscSetLayout,
 		uint32_t dscSetLayoutCount,
 		uint32_t pushConstantSize);
