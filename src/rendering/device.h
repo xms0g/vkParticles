@@ -9,11 +9,6 @@
 
 enum class QueueType { Graphics, Compute };
 
-class Pipeline;
-class DescriptorSetLayout;
-class CommandPool;
-class DescriptorPool;
-class Swapchain;
 class Window;
 class Buffer;
 
