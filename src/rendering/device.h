@@ -91,6 +91,13 @@ private:
 	};
 
 	Window& mWindow;
+	uint32_t mImageIndex{0};
+	uint32_t mFrameIndex{0};
+	uint64_t mTimelineValue{0};
+	uint64_t mComputeWaitValue{0};
+	uint64_t mComputeSignalValue{0};
+	uint64_t mGraphicsWaitValue{0};
+	uint64_t mGraphicsSignalValue{0};
 	vk::raii::Context mContext;
 	vk::raii::Instance mInstance{nullptr};
 	vk::raii::PhysicalDevice mPhysicalDevice{nullptr};
@@ -109,13 +116,6 @@ private:
 	std::vector<CommandBuffer> mGraphicsCommandBuffers;
 	std::vector<CommandBuffer> mComputeCommandBuffers;
 	vk::raii::Semaphore mSemaphore{nullptr};
-	uint32_t mImageIndex{0};
-	uint64_t mTimelineValue{0};
-	uint64_t mComputeWaitValue{0};
-	uint64_t mComputeSignalValue{0};
-	uint64_t mGraphicsWaitValue{0};
-	uint64_t mGraphicsSignalValue{0};
-	uint32_t mFrameIndex{0};
 	std::vector<vk::raii::Fence> mFences;
 	vk::raii::DebugUtilsMessengerEXT mDebugMessenger{nullptr};
 };
