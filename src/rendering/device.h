@@ -2,6 +2,10 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan_raii.hpp>
 #include "commandBuffer.h"
+#include "descriptorPool.h"
+#include "descriptorSetLayout.h"
+#include "pipelineBuilder.h"
+#include "swapchain.h"
 
 enum class QueueType { Graphics, Compute };
 
@@ -94,12 +98,12 @@ private:
 	vk::raii::Queue mQueue{nullptr};
 	uint32_t mQueueIndex{static_cast<uint32_t>(~0)};
 	vk::raii::SurfaceKHR mSurface{nullptr};
-	std::unique_ptr<Swapchain> mSwapchain;
-	std::unique_ptr<DescriptorSetLayout> mComputeDescriptorSetLayout;
-	std::unique_ptr<DescriptorPool> mDescriptorPool;
+	Swapchain mSwapchain{};
+	DescriptorSetLayout mComputeDescriptorSetLayout{};
+	DescriptorPool mDescriptorPool{};
 	std::vector<vk::raii::DescriptorSet> mComputeDescriptorSets;
-	std::unique_ptr<Pipeline> mGraphicsPipeline{nullptr};
-	std::unique_ptr<Pipeline> mComputePipeline{nullptr};
+	GraphicsPipeline mGraphicsPipeline{};
+	ComputePipeline mComputePipeline{};
 	std::vector<Buffer> mShaderStorageBuffers;
 	std::unique_ptr<CommandPool> mCommandPool;
 	std::vector<CommandBuffer> mGraphicsCommandBuffers;

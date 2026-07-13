@@ -5,6 +5,8 @@
 
 class Swapchain {
 public:
+	Swapchain() = default;
+
 	Swapchain(
 		const vk::raii::SurfaceKHR& surface,
 		const vk::raii::Device& device,

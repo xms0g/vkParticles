@@ -5,6 +5,8 @@
 
 class CommandPool {
 public:
+	CommandPool() = default;
+
 	explicit CommandPool(const vk::raii::Device& device, uint32_t queueIndex = 0, vk::CommandPoolCreateFlags flags = {});
 
 	vk::raii::CommandPool& operator*() noexcept { return mCommandPool; }

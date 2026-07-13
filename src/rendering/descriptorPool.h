@@ -5,6 +5,8 @@
 
 class DescriptorPool {
 public:
+	DescriptorPool() = default;
+
 	explicit DescriptorPool(const vk::raii::Device& device);
 
 	DescriptorPool& addMaxSets(uint32_t count);
@@ -20,8 +22,8 @@ public:
 
 private:
 	uint32_t mMaxSets{0};
+	const vk::raii::Device* mDevice;
 	std::vector<vk::DescriptorPoolSize> mPoolSizes;
 	vk::DescriptorPoolCreateFlags mPoolFlags;
-	const vk::raii::Device& mDevice;
 	vk::raii::DescriptorPool mDescriptorPool{nullptr};
 };

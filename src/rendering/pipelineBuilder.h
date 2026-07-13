@@ -91,6 +91,8 @@ protected:
 
 class GraphicsPipeline : public Pipeline {
 public:
+	GraphicsPipeline() = default;
+
 	GraphicsPipeline(PipelineBuilder& builder, Shader& shader, vk::SurfaceFormatKHR& surfaceFormat, const VertexLayout& layout);
 
 private:
@@ -99,6 +101,8 @@ private:
 
 class ComputePipeline : public Pipeline {
 public:
+	ComputePipeline() = default;
+
 	ComputePipeline(
 		PipelineBuilder& builder,
 		Shader& shader,

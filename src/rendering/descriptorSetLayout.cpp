@@ -1,6 +1,6 @@
 #include "descriptorSetLayout.h"
 
-DescriptorSetLayout::DescriptorSetLayout(const vk::raii::Device& device) : mDevice(device) {
+DescriptorSetLayout::DescriptorSetLayout(const vk::raii::Device& device) : mDevice(&device) {
 }
 
 DescriptorSetLayout& DescriptorSetLayout::addBinding(
@@ -18,5 +18,5 @@ void DescriptorSetLayout::build() {
 		.pBindings = mBindings.data()
 	};
 
-	mDescriptorSetLayout = vk::raii::DescriptorSetLayout(mDevice, layoutInfo);
+	mDescriptorSetLayout = vk::raii::DescriptorSetLayout(*mDevice, layoutInfo);
 }

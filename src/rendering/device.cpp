@@ -16,7 +16,6 @@
 #include "commandPool.h"
 #include "descriptorPool.h"
 #include "descriptorSet.h"
-#include "descriptorSetLayout.h"
 #include "deviceExtension.hpp"
 #include "image.h"
 #include "pipelineBuilder.h"
@@ -51,7 +50,7 @@ void Device::init() {
 }
 
 void Device::prepareFrame() {
-	mImageIndex = mSwapchain->acquireNextImage(mFences[mFrameIndex]);
+	mImageIndex = mSwapchain.acquireNextImage(mFences[mFrameIndex]);
 
 	auto fenceResult = mDevice.waitForFences(*mFences[mFrameIndex], vk::True, UINT64_MAX);
 	if (fenceResult != vk::Result::eSuccess) {
@@ -84,7 +83,7 @@ void Device::presentFrame() {
 		.waitSemaphoreCount = 0, // No binary semaphores needed
 		.pWaitSemaphores = nullptr,
 		.swapchainCount = 1,
-		.pSwapchains = &***mSwapchain,
+		.pSwapchains = &**mSwapchain,
 		.pImageIndices = &mImageIndex
 	};
 
@@ -93,7 +92,7 @@ void Device::presentFrame() {
 	// here and does not need to be caught by an exception.
 	if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR || mWindow.windowResized()) {
 		mWindow.windowResized(false);
-		mSwapchain->recreate(mSurface, mDevice, mPhysicalDevice, *mWindow);
+		mSwapchain.recreate(mSurface, mDevice, mPhysicalDevice, *mWindow);
 	} else {
 		// There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
 		assert(result == vk::Result::eSuccess);
@@ -260,12 +259,12 @@ void Device::createLogicalDevice() {
 }
 
 void Device::createSwapchain() {
-	mSwapchain = std::make_unique<Swapchain>(mSurface, mDevice, mPhysicalDevice, *mWindow);
+	mSwapchain = Swapchain(mSurface, mDevice, mPhysicalDevice, *mWindow);
 }
 
 void Device::createDescriptorSetLayout() {
-	mComputeDescriptorSetLayout = std::make_unique<DescriptorSetLayout>(mDevice);
-	mComputeDescriptorSetLayout->addBinding(0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute)
+	mComputeDescriptorSetLayout = DescriptorSetLayout(mDevice);
+	mComputeDescriptorSetLayout.addBinding(0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute)
 			.addBinding(1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute)
 			.build();
 }
@@ -274,12 +273,14 @@ void Device::createPipelines() {
 	PipelineBuilder builder{mDevice};
 	Shader shader{mDevice, std::string(SHADER_BINARY_DIR) + SHADER_NAME};
 
-	mGraphicsPipeline = std::make_unique<GraphicsPipeline>(builder, shader, mSwapchain->surfaceFormat(), Particle::layout());
+	mGraphicsPipeline = GraphicsPipeline(builder, shader, mSwapchain.surfaceFormat(), Particle::layout());
+
 	builder.reset();
-	mComputePipeline = std::make_unique<ComputePipeline>(
+
+	mComputePipeline = ComputePipeline(
 		builder,
 		shader,
-		*mComputeDescriptorSetLayout,
+		mComputeDescriptorSetLayout,
 		1,
 		sizeof(ComputePushConstants));
 }
@@ -292,8 +293,8 @@ void Device::createCommandPool() {
 }
 
 void Device::createDescriptorPool() {
-	mDescriptorPool = std::make_unique<DescriptorPool>(mDevice);
-	mDescriptorPool->addMaxSets(MAX_FRAMES_IN_FLIGHT)
+	mDescriptorPool = DescriptorPool(mDevice);
+	mDescriptorPool.addMaxSets(MAX_FRAMES_IN_FLIGHT)
 			.addPoolFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
 			.addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
 			.addPoolSize(vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2)
@@ -337,7 +338,7 @@ void Device::createShaderStorageBuffers() {
 }
 
 void Device::createComputeDescriptorSets() {
-	const DescriptorSetAllocator allocator(mDevice, *mDescriptorPool);
+	const DescriptorSetAllocator allocator(mDevice, mDescriptorPool);
 	mComputeDescriptorSets = allocator.allocate(MAX_FRAMES_IN_FLIGHT, **mComputeDescriptorSetLayout);
 
 	DescriptorSetWriter writer(mDevice);
@@ -380,7 +381,7 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	(*commandBuffer).reset();
 	(*commandBuffer).begin({});
 
-	const auto& image = mSwapchain->image(imageIndex);
+	const auto& image = mSwapchain.image(imageIndex);
 	// Before starting rendering, transition the swapchain image to COLOR_ATTACHMENT_OPTIMAL
 	Image::transitionImageLayout(
 		image,
@@ -396,7 +397,7 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
 	vk::RenderingAttachmentInfo attachmentInfo = {
-		.imageView = mSwapchain->imageView(imageIndex),
+		.imageView = mSwapchain.imageView(imageIndex),
 		.imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
 		.loadOp = vk::AttachmentLoadOp::eClear,
 		.storeOp = vk::AttachmentStoreOp::eStore,
@@ -404,7 +405,7 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	};
 
 	const vk::RenderingInfo renderingInfo = {
-		.renderArea = {.offset = {0, 0}, .extent = mSwapchain->extent()},
+		.renderArea = {.offset = {0, 0}, .extent = mSwapchain.extent()},
 		.layerCount = 1,
 		.colorAttachmentCount = 1,
 		.pColorAttachments = &attachmentInfo
@@ -417,11 +418,11 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 		vk::Viewport(
 			0.0f,
 			0.0f,
-			static_cast<float>(mSwapchain->extent().width),
-			static_cast<float>(mSwapchain->extent().height),
+			static_cast<float>(mSwapchain.extent().width),
+			static_cast<float>(mSwapchain.extent().height),
 			0.0f,
 			1.0f));
-	(*commandBuffer).setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), mSwapchain->extent()));
+	(*commandBuffer).setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), mSwapchain.extent()));
 	(*commandBuffer).bindVertexBuffers(0, {*mShaderStorageBuffers[mFrameIndex]}, {0});
 	(*commandBuffer).draw(PARTICLE_COUNT, 1, 0, 0);
 	(*commandBuffer).endRendering();
@@ -446,7 +447,7 @@ void Device::recordComputeCommandBuffer(const float deltaTime) {
 	(*commandBuffer).bindPipeline(vk::PipelineBindPoint::eCompute, **mComputePipeline);
 	(*commandBuffer).bindDescriptorSets(
 		vk::PipelineBindPoint::eCompute,
-		mComputePipeline->layout(),
+		mComputePipeline.layout(),
 		0,
 		{mComputeDescriptorSets[mFrameIndex]}, {});
 
@@ -455,7 +456,7 @@ void Device::recordComputeCommandBuffer(const float deltaTime) {
 	};
 
 	(*commandBuffer).pushConstants(
-		mComputePipeline->layout(),
+		mComputePipeline.layout(),
 		vk::ShaderStageFlagBits::eCompute,
 		0,
 		vk::ArrayProxy<const ComputePushConstants>(pc));

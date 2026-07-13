@@ -5,6 +5,8 @@
 
 class DescriptorSetLayout {
 public:
+	DescriptorSetLayout() = default;
+
 	explicit DescriptorSetLayout(const vk::raii::Device& device);
 
 	DescriptorSetLayout& addBinding(
@@ -19,7 +21,7 @@ public:
 	const vk::raii::DescriptorSetLayout& operator*() const noexcept { return mDescriptorSetLayout; }
 
 private:
+	const vk::raii::Device* mDevice;
 	std::vector<vk::DescriptorSetLayoutBinding> mBindings;
-	const vk::raii::Device& mDevice;
 	vk::raii::DescriptorSetLayout mDescriptorSetLayout{nullptr};
 };
