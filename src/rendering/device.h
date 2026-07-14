@@ -2,6 +2,7 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan_raii.hpp>
 #include "commandBuffer.h"
+#include "commandPool.h"
 #include "descriptorPool.h"
 #include "descriptorSetLayout.h"
 #include "pipelineBuilder.h"
@@ -107,7 +108,7 @@ private:
 	GraphicsPipeline mGraphicsPipeline{};
 	ComputePipeline mComputePipeline{};
 	std::vector<Buffer> mShaderStorageBuffers;
-	std::unique_ptr<CommandPool> mCommandPool;
+	CommandPool mCommandPool;
 	std::vector<CommandBuffer> mGraphicsCommandBuffers;
 	std::vector<CommandBuffer> mComputeCommandBuffers;
 	vk::raii::Semaphore mSemaphore{nullptr};

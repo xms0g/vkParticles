@@ -286,7 +286,7 @@ void Device::createPipelines() {
 }
 
 void Device::createCommandPool() {
-	mCommandPool = std::make_unique<CommandPool>(
+	mCommandPool = CommandPool(
 		mDevice,
 		mQueueIndex,
 		vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
@@ -371,8 +371,8 @@ void Device::createCommandBuffers() {
 	mComputeCommandBuffers.clear();
 
 	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		mGraphicsCommandBuffers.emplace_back(mDevice, *mCommandPool, vk::CommandBufferLevel::ePrimary);
-		mComputeCommandBuffers.emplace_back(mDevice, *mCommandPool, vk::CommandBufferLevel::ePrimary);
+		mGraphicsCommandBuffers.emplace_back(mDevice, mCommandPool, vk::CommandBufferLevel::ePrimary);
+		mComputeCommandBuffers.emplace_back(mDevice, mCommandPool, vk::CommandBufferLevel::ePrimary);
 	}
 }
 
