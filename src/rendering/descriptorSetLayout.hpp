@@ -20,7 +20,7 @@ public:
 	const vk::raii::DescriptorSetLayout& operator*() const noexcept { return mDescriptorSetLayout; }
 
 private:
-	const vk::raii::Device* mDevice;
+	const vk::raii::Device* mDevice{nullptr};
 	std::vector<vk::DescriptorSetLayoutBinding> mBindings;
 	vk::raii::DescriptorSetLayout mDescriptorSetLayout{nullptr};
 };

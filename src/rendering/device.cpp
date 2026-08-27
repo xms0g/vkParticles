@@ -383,7 +383,7 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 
 	const auto& image = mSwapchain.image(imageIndex);
 	// Before starting rendering, transition the swapchain image to COLOR_ATTACHMENT_OPTIMAL
-	Image::transitionImageLayout(
+	image::transitionImageLayout(
 		image,
 		vk::ImageLayout::eUndefined,
 		vk::ImageLayout::eColorAttachmentOptimal,
@@ -427,7 +427,7 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	(*commandBuffer).draw(PARTICLE_COUNT, 1, 0, 0);
 	(*commandBuffer).endRendering();
 	// After rendering, transition the swapchain image to PRESENT_SRC
-	Image::transitionImageLayout(
+	image::transitionImageLayout(
 		image,
 		vk::ImageLayout::eColorAttachmentOptimal,
 		vk::ImageLayout::ePresentSrcKHR,

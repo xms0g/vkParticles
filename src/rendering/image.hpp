@@ -4,7 +4,7 @@
 
 class CommandBuffer;
 
-namespace Image {
+namespace image {
 void transitionImageLayout(vk::Image image,
                            vk::ImageLayout oldLayout,
                            vk::ImageLayout newLayout,

@@ -1,7 +1,7 @@
 #include "image.hpp"
 #include "commandBuffer.hpp"
 
-void Image::transitionImageLayout(const vk::Image image,
+void image::transitionImageLayout(const vk::Image image,
                                   const vk::ImageLayout oldLayout,
                                   const vk::ImageLayout newLayout,
                                   const vk::AccessFlags2 srcAccessMask,
