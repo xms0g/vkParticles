@@ -1,4 +1,4 @@
-#include "device.h"
+#include "device.hpp"
 #include <set>
 #include <algorithm>
 #include <filesystem>
@@ -11,16 +11,16 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include "particle.hpp"
-#include "buffer.h"
-#include "swapchain.h"
-#include "commandPool.h"
-#include "descriptorPool.h"
-#include "descriptorSet.h"
+#include "buffer.hpp"
+#include "swapchain.hpp"
+#include "commandPool.hpp"
+#include "descriptorPool.hpp"
+#include "descriptorSet.hpp"
 #include "deviceExtension.hpp"
-#include "image.h"
-#include "pipelineBuilder.h"
+#include "image.hpp"
+#include "pipelineBuilder.hpp"
 #include "validation.hpp"
-#include "../core/window.h"
+#include "../core/window.hpp"
 #include "../config/config.hpp"
 
 Device::Device(Window& window) : mWindow(window) {

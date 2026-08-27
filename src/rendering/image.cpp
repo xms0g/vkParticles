@@ -1,5 +1,5 @@
-#include "image.h"
-#include "commandBuffer.h"
+#include "image.hpp"
+#include "commandBuffer.hpp"
 
 void Image::transitionImageLayout(
 	const vk::Image image,

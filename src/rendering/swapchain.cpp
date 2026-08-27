@@ -1,4 +1,4 @@
-#include "swapchain.h"
+#include "swapchain.hpp"
 
 Swapchain::Swapchain(
 	const vk::raii::SurfaceKHR& surface,

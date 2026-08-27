@@ -1,5 +1,5 @@
-#include "descriptorSet.h"
-#include "descriptorPool.h"
+#include "descriptorSet.hpp"
+#include "descriptorPool.hpp"
 
 DescriptorSetAllocator::DescriptorSetAllocator(const vk::raii::Device& device, const DescriptorPool& pool)
 	: mPool(pool), mDevice(device) {

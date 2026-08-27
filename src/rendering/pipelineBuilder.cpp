@@ -1,6 +1,6 @@
-#include "pipelineBuilder.h"
-#include "swapchain.h"
-#include "descriptorSetLayout.h"
+#include "pipelineBuilder.hpp"
+#include "swapchain.hpp"
+#include "descriptorSetLayout.hpp"
 
 PipelineBuilder::PipelineBuilder(const vk::raii::Device& device) : mDevice(device) {
 }

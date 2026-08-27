@@ -1,4 +1,4 @@
-#include "descriptorPool.h"
+#include "descriptorPool.hpp"
 
 DescriptorPool::DescriptorPool(const vk::raii::Device& device) : mDevice(&device) {
 }

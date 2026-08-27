@@ -2,7 +2,7 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan_raii.hpp>
 #include "vertex.hpp"
-#include "shader.h"
+#include "shader.hpp"
 
 class DescriptorSetLayout;
 class Swapchain;

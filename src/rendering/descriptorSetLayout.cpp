@@ -1,4 +1,4 @@
-#include "descriptorSetLayout.h"
+#include "descriptorSetLayout.hpp"
 
 DescriptorSetLayout::DescriptorSetLayout(const vk::raii::Device& device) : mDevice(&device) {
 }
