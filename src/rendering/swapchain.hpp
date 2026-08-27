@@ -7,11 +7,10 @@ class Swapchain {
 public:
 	Swapchain() = default;
 
-	Swapchain(
-		const vk::raii::SurfaceKHR& surface,
-		const vk::raii::Device& device,
-		const vk::raii::PhysicalDevice& phyDev,
-		GLFWwindow& window);
+	Swapchain(const vk::raii::SurfaceKHR& surface,
+	          const vk::raii::Device& device,
+	          const vk::raii::PhysicalDevice& phyDev,
+	          GLFWwindow& window);
 
 	vk::SurfaceFormatKHR& surfaceFormat();
 
@@ -23,21 +22,19 @@ public:
 
 	uint32_t acquireNextImage(const vk::raii::Fence& fence) const;
 
-	void recreate(
-		const vk::raii::SurfaceKHR& surface,
-		const vk::raii::Device& device,
-		const vk::raii::PhysicalDevice& phyDev,
-		GLFWwindow& window);
+	void recreate(const vk::raii::SurfaceKHR& surface,
+	              const vk::raii::Device& device,
+	              const vk::raii::PhysicalDevice& phyDev,
+	              GLFWwindow& window);
 
 	vk::raii::SwapchainKHR& operator*() noexcept { return mSwapChain; }
 	const vk::raii::SwapchainKHR& operator*() const noexcept { return mSwapChain; }
 
 private:
-	void create(
-		const vk::raii::SurfaceKHR& surface,
-		const vk::raii::Device& device,
-		const vk::raii::PhysicalDevice& phyDev,
-		GLFWwindow& window);
+	void create(const vk::raii::SurfaceKHR& surface,
+	            const vk::raii::Device& device,
+	            const vk::raii::PhysicalDevice& phyDev,
+	            GLFWwindow& window);
 
 	void createSwapchainImageViews(const vk::raii::Device& device);
 

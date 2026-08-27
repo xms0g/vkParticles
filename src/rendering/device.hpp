@@ -67,11 +67,10 @@ private:
 	// Support Functions
 	static std::vector<const char*> getRequiredInstanceExtensions();
 
-	static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
-		vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
-		vk::DebugUtilsMessageTypeFlagsEXT type,
-		const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData);
+	static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
+	                                                      vk::DebugUtilsMessageTypeFlagsEXT type,
+	                                                      const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	                                                      void* pUserData);
 
 	static bool checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice);
 

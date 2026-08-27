@@ -492,11 +492,10 @@ std::vector<const char*> Device::getRequiredInstanceExtensions() {
 	return extensions;
 }
 
-vk::Bool32 Device::debugCallback(
-	vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
-	const vk::DebugUtilsMessageTypeFlagsEXT type,
-	const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
-	void* pUserData) {
+vk::Bool32 Device::debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
+                                 const vk::DebugUtilsMessageTypeFlagsEXT type,
+                                 const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                 void* pUserData) {
 	std::cerr << "validation layer: type " << to_string(type) << " msg: " << pCallbackData->pMessage << std::endl;
 
 	return vk::False;
@@ -533,7 +532,8 @@ bool Device::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 	bool supportsShaderDrawParameters = features2.get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters;
 	bool supportsDynamicRendering = features2.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering;
 	bool supportsSynchronization2 = features2.get<vk::PhysicalDeviceVulkan13Features>().synchronization2;
-	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
+	bool supportsExtendedDynamicState = features2.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().
+			extendedDynamicState;
 	bool supportsRequiredFeatures =
 			supportsSamplerAnisotropy &&
 			supportsShaderDrawParameters &&

@@ -9,11 +9,10 @@ public:
 
 	explicit DescriptorSetLayout(const vk::raii::Device& device);
 
-	DescriptorSetLayout& addBinding(
-		uint32_t binding,
-		vk::DescriptorType type,
-		uint32_t count = 1,
-		vk::ShaderStageFlags stageFlags = vk::ShaderStageFlagBits::eAll);
+	DescriptorSetLayout& addBinding(uint32_t binding,
+	                                vk::DescriptorType type,
+	                                uint32_t count = 1,
+	                                vk::ShaderStageFlags stageFlags = vk::ShaderStageFlagBits::eAll);
 
 	void build();
 

@@ -2,7 +2,8 @@
 #include "swapchain.hpp"
 #include "descriptorSetLayout.hpp"
 
-PipelineBuilder::PipelineBuilder(const vk::raii::Device& device) : mDevice(device) {
+PipelineBuilder::PipelineBuilder(const vk::raii::Device& device)
+	: mDevice(device) {
 }
 
 void PipelineBuilder::reset() {
@@ -114,11 +115,10 @@ PipelineBuilder& PipelineBuilder::alphaBlending() {
 	return *this;
 }
 
-vk::raii::PipelineLayout PipelineBuilder::createPipelineLayout(
-	const vk::DescriptorSetLayout* dscSetLayout,
-	const uint32_t dscSetLayoutCount,
-	const uint32_t pushConstantSize,
-	const vk::ShaderStageFlags stages) const {
+vk::raii::PipelineLayout PipelineBuilder::createPipelineLayout(const vk::DescriptorSetLayout* dscSetLayout,
+                                                               const uint32_t dscSetLayoutCount,
+                                                               const uint32_t pushConstantSize,
+                                                               const vk::ShaderStageFlags stages) const {
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
 		.setLayoutCount = dscSetLayoutCount,
 		.pSetLayouts = dscSetLayout,
@@ -139,9 +139,8 @@ vk::raii::PipelineLayout PipelineBuilder::createPipelineLayout(
 	return {mDevice, pipelineLayoutInfo};
 }
 
-vk::raii::Pipeline PipelineBuilder::buildGraphics(
-	vk::SurfaceFormatKHR& surfaceFormat,
-	const vk::raii::PipelineLayout& layout) {
+vk::raii::Pipeline PipelineBuilder::buildGraphics(vk::SurfaceFormatKHR& surfaceFormat,
+                                                  const vk::raii::PipelineLayout& layout) {
 	const vk::PipelineDynamicStateCreateInfo dynamicState{
 		.dynamicStateCount = static_cast<uint32_t>(mDynamicStates.size()),
 		.pDynamicStates = mDynamicStates.data()
@@ -181,10 +180,9 @@ vk::raii::Pipeline PipelineBuilder::buildCompute(const vk::raii::PipelineLayout&
 	return {mDevice, nullptr, pipelineInfo};
 }
 
-GraphicsPipeline::GraphicsPipeline(
-	PipelineBuilder& builder, Shader& shader,
-	vk::SurfaceFormatKHR& surfaceFormat,
-	const VertexLayout& layout) {
+GraphicsPipeline::GraphicsPipeline(PipelineBuilder& builder, Shader& shader,
+                                   vk::SurfaceFormatKHR& surfaceFormat,
+                                   const VertexLayout& layout) {
 	builder.addVertexShader(shader, "vertMain")
 			.addFragmentShader(shader, "fragMain")
 			.vertexInput(layout)
@@ -199,12 +197,11 @@ GraphicsPipeline::GraphicsPipeline(
 	mPipeline = builder.buildGraphics(surfaceFormat, mPipelineLayout);
 }
 
-ComputePipeline::ComputePipeline(
-	PipelineBuilder& builder,
-	Shader& shader,
-	DescriptorSetLayout& dscSetLayout,
-	const uint32_t dscSetLayoutCount,
-	const uint32_t pushConstantSize) {
+ComputePipeline::ComputePipeline(PipelineBuilder& builder,
+                                 Shader& shader,
+                                 DescriptorSetLayout& dscSetLayout,
+                                 const uint32_t dscSetLayoutCount,
+                                 const uint32_t pushConstantSize) {
 	builder.addComputeShader(shader, "compMain");
 
 	mPipelineLayout = builder.createPipelineLayout(
