@@ -136,7 +136,7 @@ vk::raii::PipelineLayout PipelineBuilder::createPipelineLayout(
 	}
 
 
-	return vk::raii::PipelineLayout(mDevice, pipelineLayoutInfo);
+	return {mDevice, pipelineLayoutInfo};
 }
 
 vk::raii::Pipeline PipelineBuilder::buildGraphics(
@@ -169,10 +169,7 @@ vk::raii::Pipeline PipelineBuilder::buildGraphics(
 		}
 	};
 
-	return vk::raii::Pipeline(
-		mDevice,
-		nullptr,
-		pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>());
+	return {mDevice, nullptr, pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>()};
 }
 
 vk::raii::Pipeline PipelineBuilder::buildCompute(const vk::raii::PipelineLayout& layout) const {
@@ -181,18 +178,16 @@ vk::raii::Pipeline PipelineBuilder::buildCompute(const vk::raii::PipelineLayout&
 		.layout = *layout
 	};
 
-	return vk::raii::Pipeline(mDevice, nullptr, pipelineInfo);
+	return {mDevice, nullptr, pipelineInfo};
 }
 
 GraphicsPipeline::GraphicsPipeline(
 	PipelineBuilder& builder, Shader& shader,
 	vk::SurfaceFormatKHR& surfaceFormat,
 	const VertexLayout& layout) {
-	mVertexLayout = layout;
-
 	builder.addVertexShader(shader, "vertMain")
 			.addFragmentShader(shader, "fragMain")
-			.vertexInput(mVertexLayout)
+			.vertexInput(layout)
 			.topology(vk::PrimitiveTopology::ePointList)
 			.viewportState(1, 1)
 			.dynamicStates<vk::DynamicState::eViewport, vk::DynamicState::eScissor>()

@@ -94,9 +94,6 @@ public:
 	GraphicsPipeline() = default;
 
 	GraphicsPipeline(PipelineBuilder& builder, Shader& shader, vk::SurfaceFormatKHR& surfaceFormat, const VertexLayout& layout);
-
-private:
-	VertexLayout mVertexLayout;
 };
 
 class ComputePipeline : public Pipeline {
