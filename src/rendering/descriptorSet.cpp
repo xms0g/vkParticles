@@ -27,13 +27,12 @@ void DescriptorSetWriter::reserve(const uint32_t count) {
 	mWrites.reserve(count);
 }
 
-DescriptorSetWriter& DescriptorSetWriter::writeBuffer(
-	const vk::DescriptorSet set,
-	const uint32_t binding,
-	const vk::DescriptorType type,
-	const vk::Buffer buffer,
-	const vk::DeviceSize offset,
-	const vk::DeviceSize range) {
+DescriptorSetWriter& DescriptorSetWriter::writeBuffer(const vk::DescriptorSet set,
+                                                      const uint32_t binding,
+                                                      const vk::DescriptorType type,
+                                                      const vk::Buffer buffer,
+                                                      const vk::DeviceSize offset,
+                                                      const vk::DeviceSize range) {
 	mBufferInfos.emplace_back(vk::DescriptorBufferInfo{
 		.buffer = buffer,
 		.offset = offset,
