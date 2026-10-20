@@ -1,6 +1,7 @@
 #include "pipelineBuilder.hpp"
 #include "swapchain.hpp"
 #include "descriptorSetLayout.hpp"
+#include "vertex.hpp"
 
 PipelineBuilder::PipelineBuilder(const vk::raii::Device& device)
 	: mDevice(device) {
@@ -9,13 +10,16 @@ PipelineBuilder::PipelineBuilder(const vk::raii::Device& device)
 void PipelineBuilder::reset() {
 	mShaderStages.clear();
 	mDynamicStates.clear();
+	mEntryPointNames.clear();
 }
 
 PipelineBuilder& PipelineBuilder::addVertexShader(Shader& shader, const std::string& entry) {
+	mEntryPointNames.push_back(entry);
+
 	const vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
 		.stage = vk::ShaderStageFlagBits::eVertex,
 		.module = *shader,
-		.pName = entry.c_str()
+		.pName = mEntryPointNames.back().c_str()
 	};
 
 	mShaderStages.push_back(vertShaderStageInfo);
@@ -23,10 +27,12 @@ PipelineBuilder& PipelineBuilder::addVertexShader(Shader& shader, const std::str
 }
 
 PipelineBuilder& PipelineBuilder::addFragmentShader(Shader& shader, const std::string& entry) {
+	mEntryPointNames.push_back(entry);
+
 	const vk::PipelineShaderStageCreateInfo fragShaderStageInfo{
 		.stage = vk::ShaderStageFlagBits::eFragment,
 		.module = *shader,
-		.pName = entry.c_str()
+		.pName = mEntryPointNames.back().c_str()
 	};
 
 	mShaderStages.push_back(fragShaderStageInfo);
@@ -34,10 +40,12 @@ PipelineBuilder& PipelineBuilder::addFragmentShader(Shader& shader, const std::s
 }
 
 PipelineBuilder& PipelineBuilder::addComputeShader(Shader& shader, const std::string& entry) {
+	mEntryPointNames.push_back(entry);
+
 	const vk::PipelineShaderStageCreateInfo computeShaderStageInfo{
 		.stage = vk::ShaderStageFlagBits::eCompute,
 		.module = *shader,
-		.pName = entry.c_str()
+		.pName = mEntryPointNames.back().c_str()
 	};
 
 	mShaderStages.push_back(computeShaderStageInfo);
@@ -74,7 +82,7 @@ PipelineBuilder& PipelineBuilder::rasterizer() {
 		.depthClampEnable = vk::False,
 		.rasterizerDiscardEnable = vk::False,
 		.polygonMode = vk::PolygonMode::eFill,
-		.cullMode = vk::CullModeFlagBits::eBack,
+		.cullMode = vk::CullModeFlagBits::eNone,
 		.frontFace = vk::FrontFace::eCounterClockwise,
 		.depthBiasEnable = vk::False,
 		.lineWidth = 1.0f
@@ -94,20 +102,16 @@ PipelineBuilder& PipelineBuilder::multisampling() {
 
 PipelineBuilder& PipelineBuilder::alphaBlending() {
 	mColorBlendAttachment = {
-		.blendEnable = vk::True,
-		.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
-		.dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
-		.colorBlendOp = vk::BlendOp::eAdd,
-		.srcAlphaBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
-		.dstAlphaBlendFactor = vk::BlendFactor::eZero,
-		.alphaBlendOp = vk::BlendOp::eAdd,
-		.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-		                  vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
+		.blendEnable = vk::False,
+		.colorWriteMask =
+			vk::ColorComponentFlagBits::eR |
+			vk::ColorComponentFlagBits::eG |
+			vk::ColorComponentFlagBits::eB |
+			vk::ColorComponentFlagBits::eA
 	};
 
 	mColorBlending = {
 		.logicOpEnable = vk::False,
-		.logicOp = vk::LogicOp::eCopy,
 		.attachmentCount = 1,
 		.pAttachments = &mColorBlendAttachment
 	};
@@ -119,22 +123,20 @@ vk::raii::PipelineLayout PipelineBuilder::createPipelineLayout(const vk::Descrip
                                                                const uint32_t dscSetLayoutCount,
                                                                const uint32_t pushConstantSize,
                                                                const vk::ShaderStageFlags stages) const {
+	vk::PushConstantRange pushConstantRange{};
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
 		.setLayoutCount = dscSetLayoutCount,
 		.pSetLayouts = dscSetLayout,
 	};
 
 	if (pushConstantSize > 0) {
-		const vk::PushConstantRange pushConstantRange{
-			.stageFlags = stages,
-			.offset = 0,
-			.size = pushConstantSize
-		};
+		pushConstantRange.stageFlags = stages;
+		pushConstantRange.offset = 0;
+		pushConstantRange.size = pushConstantSize;
 
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 	}
-
 
 	return {mDevice, pipelineLayoutInfo};
 }
@@ -180,9 +182,14 @@ vk::raii::Pipeline PipelineBuilder::buildCompute(const vk::raii::PipelineLayout&
 	return {mDevice, nullptr, pipelineInfo};
 }
 
-GraphicsPipeline::GraphicsPipeline(PipelineBuilder& builder, Shader& shader,
+GraphicsPipeline::GraphicsPipeline(PipelineBuilder& builder,
+                                   Shader& shader,
                                    vk::SurfaceFormatKHR& surfaceFormat,
+                                   DescriptorSetLayout& dscSetLayout,
+                                   const uint32_t dscSetLayoutCount,
+                                   const uint32_t pushConstantSize,
                                    const VertexLayout& layout) {
+	builder.reset();
 	builder.addVertexShader(shader, "vertMain")
 			.addFragmentShader(shader, "fragMain")
 			.vertexInput(layout)
@@ -193,7 +200,12 @@ GraphicsPipeline::GraphicsPipeline(PipelineBuilder& builder, Shader& shader,
 			.multisampling()
 			.alphaBlending();
 
-	mPipelineLayout = builder.createPipelineLayout();
+	mPipelineLayout = builder.createPipelineLayout(
+		&**dscSetLayout,
+		dscSetLayoutCount,
+		pushConstantSize,
+		vk::ShaderStageFlagBits::eVertex);
+
 	mPipeline = builder.buildGraphics(surfaceFormat, mPipelineLayout);
 }
 
@@ -202,6 +214,7 @@ ComputePipeline::ComputePipeline(PipelineBuilder& builder,
                                  DescriptorSetLayout& dscSetLayout,
                                  const uint32_t dscSetLayoutCount,
                                  const uint32_t pushConstantSize) {
+	builder.reset();
 	builder.addComputeShader(shader, "compMain");
 
 	mPipelineLayout = builder.createPipelineLayout(

@@ -1,9 +1,10 @@
 #pragma once
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#include <list>
 #include <vulkan/vulkan_raii.hpp>
-#include "vertex.hpp"
 #include "shader.hpp"
 
+struct VertexLayout;
 class DescriptorSetLayout;
 class Swapchain;
 class Shader;
@@ -59,6 +60,7 @@ private:
 	vk::PipelineVertexInputStateCreateInfo mVertexInputInfo;
 	std::vector<vk::PipelineShaderStageCreateInfo> mShaderStages;
 	std::vector<vk::DynamicState> mDynamicStates;
+	std::list<std::string> mEntryPointNames;
 	const vk::raii::Device& mDevice;
 };
 
@@ -85,6 +87,9 @@ public:
 	GraphicsPipeline(PipelineBuilder& builder,
 	                 Shader& shader,
 	                 vk::SurfaceFormatKHR& surfaceFormat,
+	                 DescriptorSetLayout& dscSetLayout,
+	                 uint32_t dscSetLayoutCount,
+	                 uint32_t pushConstantSize,
 	                 const VertexLayout& layout);
 };
 
