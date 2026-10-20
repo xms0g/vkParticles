@@ -77,9 +77,9 @@ private:
 	void copyBuffer(const Buffer& dstBuffer, const Buffer& srcBuffer, vk::DeviceSize size) const;
 
 	[[nodiscard]]
-	vk::raii::CommandBuffer beginSingleTimeCommands() const;
+	CommandBuffer beginSingleTimeCommands() const;
 
-	void endSingleTimeCommands(const vk::raii::CommandBuffer& commandBuffer) const;
+	void endSingleTimeCommands(const CommandBuffer& cmd) const;
 
 	struct PushConstants {
 		float deltaTime{1.0f};

@@ -10,7 +10,6 @@
 #include <GLFW/glfw3.h>
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
-#include "../particle.hpp"
 #include "buffer.hpp"
 #include "swapchain.hpp"
 #include "commandPool.hpp"
@@ -20,10 +19,12 @@
 #include "image.hpp"
 #include "pipelineBuilder.hpp"
 #include "validation.hpp"
+#include "../particle.hpp"
 #include "../../core/window.hpp"
 #include "../../config/config.hpp"
 
-Device::Device(Window& window) : mWindow(window) {
+Device::Device(Window& window)
+	: mWindow(window) {
 }
 
 Device::~Device() = default;
@@ -383,9 +384,9 @@ void Device::createCommandBuffers() {
 }
 
 void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex, const float deltaTime, const float time) {
-	const auto& commandBuffer = mGraphicsCommandBuffers[mFrameIndex];
-	(*commandBuffer).reset();
-	(*commandBuffer).begin({});
+	const auto& cmd = mGraphicsCommandBuffers[mFrameIndex];
+	(*cmd).reset();
+	(*cmd).begin({});
 
 	const auto& image = mSwapchain.image(imageIndex);
 	// Before starting rendering, transition the swapchain image to COLOR_ATTACHMENT_OPTIMAL
@@ -397,17 +398,15 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex, const float 
 		vk::AccessFlagBits2::eColorAttachmentWrite, // dstAccessMask
 		vk::PipelineStageFlagBits2::eColorAttachmentOutput, // srcStage
 		vk::PipelineStageFlagBits2::eColorAttachmentOutput, // dstStage
-		commandBuffer
+		cmd
 	);
-
-	constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
 	vk::RenderingAttachmentInfo attachmentInfo = {
 		.imageView = mSwapchain.imageView(imageIndex),
 		.imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
 		.loadOp = vk::AttachmentLoadOp::eClear,
 		.storeOp = vk::AttachmentStoreOp::eStore,
-		.clearValue = clearColor
+		.clearValue = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f)
 	};
 
 	const vk::RenderingInfo renderingInfo = {
@@ -417,9 +416,9 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex, const float 
 		.pColorAttachments = &attachmentInfo
 	};
 
-	(*commandBuffer).beginRendering(renderingInfo);
-	(*commandBuffer).bindPipeline(vk::PipelineBindPoint::eGraphics, **mGraphicsPipeline);
-	(*commandBuffer).setViewport(
+	(*cmd).beginRendering(renderingInfo);
+	(*cmd).bindPipeline(vk::PipelineBindPoint::eGraphics, **mGraphicsPipeline);
+	(*cmd).setViewport(
 		0,
 		vk::Viewport(
 			0.0f,
@@ -428,22 +427,20 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex, const float 
 			static_cast<float>(mSwapchain.extent().height),
 			0.0f,
 			1.0f));
-	(*commandBuffer).setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), mSwapchain.extent()));
-	(*commandBuffer).bindVertexBuffers(0, {*mShaderStorageBuffers[mFrameIndex]}, {0});
-	const PushConstants pc{
-		.deltaTime = deltaTime,
-		.time = time,
-		.aspect = WIDTH / static_cast<float>(HEIGHT),
-		.count = PARTICLE_COUNT
-	};
-
-	(*commandBuffer).pushConstants(
+	(*cmd).setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), mSwapchain.extent()));
+	(*cmd).bindVertexBuffers(0, {*mShaderStorageBuffers[mFrameIndex]}, {0});
+	(*cmd).pushConstants<PushConstants>(
 		mGraphicsPipeline.layout(),
 		vk::ShaderStageFlagBits::eVertex,
 		0,
-		vk::ArrayProxy<const PushConstants>(pc));
-	(*commandBuffer).draw(PARTICLE_COUNT, 1, 0, 0);
-	(*commandBuffer).endRendering();
+		PushConstants{
+			.deltaTime = deltaTime,
+			.time = time,
+			.aspect = WIDTH / static_cast<float>(HEIGHT),
+			.count = PARTICLE_COUNT
+		});
+	(*cmd).draw(PARTICLE_COUNT, 1, 0, 0);
+	(*cmd).endRendering();
 	// After rendering, transition the swapchain image to PRESENT_SRC
 	image::transitionImageLayout(
 		image,
@@ -453,36 +450,33 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex, const float 
 		{}, // dstAccessMask
 		vk::PipelineStageFlagBits2::eColorAttachmentOutput, // srcStage
 		vk::PipelineStageFlagBits2::eBottomOfPipe, // dstStage
-		commandBuffer
+		cmd
 	);
-	(*commandBuffer).end();
+	(*cmd).end();
 }
 
 void Device::recordComputeCommandBuffer(const float deltaTime, const float time) {
-	const auto& commandBuffer = mComputeCommandBuffers[mFrameIndex];
-	(*commandBuffer).reset();
-	(*commandBuffer).begin({});
-	(*commandBuffer).bindPipeline(vk::PipelineBindPoint::eCompute, **mComputePipeline);
-	(*commandBuffer).bindDescriptorSets(
+	const auto& cmd = mComputeCommandBuffers[mFrameIndex];
+	(*cmd).reset();
+	(*cmd).begin({});
+	(*cmd).bindPipeline(vk::PipelineBindPoint::eCompute, **mComputePipeline);
+	(*cmd).bindDescriptorSets(
 		vk::PipelineBindPoint::eCompute,
 		mComputePipeline.layout(),
 		0,
 		{mComputeDescriptorSets[mFrameIndex]}, {});
-
-	const PushConstants pc{
-		.deltaTime = deltaTime,
-		.time = time,
-		.aspect = WIDTH / static_cast<float>(HEIGHT),
-		.count = PARTICLE_COUNT
-	};
-
-	(*commandBuffer).pushConstants(
+	(*cmd).pushConstants<PushConstants>(
 		mComputePipeline.layout(),
 		vk::ShaderStageFlagBits::eCompute,
 		0,
-		vk::ArrayProxy<const PushConstants>(pc));
-	(*commandBuffer).dispatch((PARTICLE_COUNT + THREADS_PER_GROUP - 1) / THREADS_PER_GROUP, 1, 1);
-	(*commandBuffer).end();
+		PushConstants{
+			.deltaTime = deltaTime,
+			.time = time,
+			.aspect = WIDTH / static_cast<float>(HEIGHT),
+			.count = PARTICLE_COUNT
+		});
+	(*cmd).dispatch((PARTICLE_COUNT + THREADS_PER_GROUP - 1) / THREADS_PER_GROUP, 1, 1);
+	(*cmd).end();
 }
 
 void Device::createSyncObjects() {
@@ -566,29 +560,24 @@ bool Device::checkDeviceSuitable(const vk::raii::PhysicalDevice& phyDevice) {
 }
 
 void Device::copyBuffer(const Buffer& dstBuffer, const Buffer& srcBuffer, const vk::DeviceSize size) const {
-	const vk::raii::CommandBuffer commandCopyBuffer = beginSingleTimeCommands();
-	commandCopyBuffer.copyBuffer(*srcBuffer, *dstBuffer, vk::BufferCopy(0, 0, size));
-	endSingleTimeCommands(commandCopyBuffer);
+	const CommandBuffer cmd = beginSingleTimeCommands();
+	(*cmd).copyBuffer(**srcBuffer, **dstBuffer, vk::BufferCopy(0, 0, size));
+	endSingleTimeCommands(cmd);
 }
 
-vk::raii::CommandBuffer Device::beginSingleTimeCommands() const {
-	const vk::CommandBufferAllocateInfo allocInfo{
-		.commandPool = **mCommandPool,
-		.level = vk::CommandBufferLevel::ePrimary,
-		.commandBufferCount = 1
-	};
+CommandBuffer Device::beginSingleTimeCommands() const {
+	auto cmd = CommandBuffer(mDevice, mCommandPool, vk::CommandBufferLevel::ePrimary);
 
-	vk::raii::CommandBuffer commandBuffer = std::move(mDevice.allocateCommandBuffers(allocInfo).front());
 	constexpr vk::CommandBufferBeginInfo beginInfo{.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
-	commandBuffer.begin(beginInfo);
+	(*cmd).begin(beginInfo);
 
-	return commandBuffer;
+	return cmd;
 }
 
-void Device::endSingleTimeCommands(const vk::raii::CommandBuffer& commandBuffer) const {
-	commandBuffer.end();
+void Device::endSingleTimeCommands(const CommandBuffer& cmd) const {
+	(*cmd).end();
 
-	const vk::SubmitInfo submitInfo{.commandBufferCount = 1, .pCommandBuffers = &*commandBuffer};
+	const vk::SubmitInfo submitInfo{.commandBufferCount = 1, .pCommandBuffers = &**cmd};
 
 	mQueue.submit(submitInfo, nullptr);
 	mQueue.waitIdle();
