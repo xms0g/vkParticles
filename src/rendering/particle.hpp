@@ -2,7 +2,7 @@
 #include <array>
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
-#include "vertex.hpp"
+#include "core/vertex.hpp"
 
 struct Particle {
 	glm::vec2 position;

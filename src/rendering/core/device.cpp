@@ -10,7 +10,7 @@
 #include <GLFW/glfw3.h>
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
-#include "particle.hpp"
+#include "../particle.hpp"
 #include "buffer.hpp"
 #include "swapchain.hpp"
 #include "commandPool.hpp"
@@ -20,8 +20,8 @@
 #include "image.hpp"
 #include "pipelineBuilder.hpp"
 #include "validation.hpp"
-#include "../core/window.hpp"
-#include "../config/config.hpp"
+#include "../../core/window.hpp"
+#include "../../config/config.hpp"
 
 Device::Device(Window& window) : mWindow(window) {
 }

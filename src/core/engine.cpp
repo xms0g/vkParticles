@@ -1,7 +1,7 @@
 #include "engine.hpp"
 #include "window.hpp"
 #include "../config/config.hpp"
-#include "../rendering/device.hpp"
+#include "../rendering/core/device.hpp"
 
 Engine::Engine()
 	: mWindow(std::make_unique<Window>()),
