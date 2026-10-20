@@ -24,11 +24,14 @@ void Engine::run() {
 		mDeltaTime = static_cast<float>(currentTime - mSecondsPreviousFrame);
 		mSecondsPreviousFrame = currentTime;
 
+		static float totalTime = 0.0f;
+		totalTime += mDeltaTime;
+
 		mWindow->updateFpsCounter(mDeltaTime);
 
 		mDevice->prepareFrame();
-		mDevice->submit<QueueType::Compute>(mDeltaTime);
-		mDevice->submit<QueueType::Graphics>(mDeltaTime);
+		mDevice->submit<QueueType::Compute>(mDeltaTime, totalTime);
+		mDevice->submit<QueueType::Graphics>(mDeltaTime, totalTime);
 		mDevice->presentFrame();
 	}
 	mDevice->waitIdle();

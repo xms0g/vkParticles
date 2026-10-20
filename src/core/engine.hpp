@@ -15,6 +15,6 @@ private:
 	std::unique_ptr<Window> mWindow;
 	std::unique_ptr<Device> mDevice;
 
-    double mDeltaTime{0.0};
+    float mDeltaTime{0.0};
     double mSecondsPreviousFrame{0};
 };
