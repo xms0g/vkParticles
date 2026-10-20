@@ -24,7 +24,7 @@ public:
 	void prepareFrame();
 
 	template<QueueType T>
-	void submit(float deltaTime);
+	void submit(float deltaTime, float time);
 
 	void presentFrame();
 
@@ -58,9 +58,9 @@ private:
 
 	void createCommandBuffers();
 
-	void recordGraphicsCommandBuffer(uint32_t imageIndex);
+	void recordGraphicsCommandBuffer(uint32_t imageIndex, float deltaTime, float time);
 
-	void recordComputeCommandBuffer(float deltaTime);
+	void recordComputeCommandBuffer(float deltaTime, float time);
 
 	void createSyncObjects();
 
@@ -81,8 +81,11 @@ private:
 
 	void endSingleTimeCommands(const vk::raii::CommandBuffer& commandBuffer) const;
 
-	struct ComputePushConstants {
+	struct PushConstants {
 		float deltaTime{1.0f};
+		float time{0.0f};
+		float aspect{1.0f};
+		float count{0.0f};
 	};
 
 	Window& mWindow;

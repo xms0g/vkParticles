@@ -273,16 +273,22 @@ void Device::createPipelines() {
 	PipelineBuilder builder{mDevice};
 	Shader shader{mDevice, std::string(SHADER_BINARY_DIR) + SHADER_NAME};
 
-	mGraphicsPipeline = GraphicsPipeline(builder, shader, mSwapchain.surfaceFormat(), Particle::layout());
-
-	builder.reset();
+	DescriptorSetLayout dummy{};
+	mGraphicsPipeline = GraphicsPipeline(
+		builder,
+		shader,
+		mSwapchain.surfaceFormat(),
+		dummy,
+		0,
+		sizeof(PushConstants),
+		Particle::layout());
 
 	mComputePipeline = ComputePipeline(
 		builder,
 		shader,
 		mComputeDescriptorSetLayout,
 		1,
-		sizeof(ComputePushConstants));
+		sizeof(PushConstants));
 }
 
 void Device::createCommandPool() {
@@ -296,7 +302,6 @@ void Device::createDescriptorPool() {
 	mDescriptorPool = DescriptorPool(mDevice);
 	mDescriptorPool.addMaxSets(MAX_FRAMES_IN_FLIGHT)
 			.addPoolFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-			.addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
 			.addPoolSize(vk::DescriptorType::eStorageBuffer, MAX_FRAMES_IN_FLIGHT * 2)
 			.build();
 }
@@ -326,7 +331,8 @@ void Device::createShaderStorageBuffers() {
 			bufferSize,
 			mDevice,
 			mPhysicalDevice,
-			vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer |
+			vk::BufferUsageFlagBits::eStorageBuffer |
+			vk::BufferUsageFlagBits::eVertexBuffer |
 			vk::BufferUsageFlagBits::eTransferDst,
 			vk::MemoryPropertyFlagBits::eDeviceLocal
 		};
@@ -376,7 +382,7 @@ void Device::createCommandBuffers() {
 	}
 }
 
-void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
+void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex, const float deltaTime, const float time) {
 	const auto& commandBuffer = mGraphicsCommandBuffers[mFrameIndex];
 	(*commandBuffer).reset();
 	(*commandBuffer).begin({});
@@ -424,6 +430,18 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 			1.0f));
 	(*commandBuffer).setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), mSwapchain.extent()));
 	(*commandBuffer).bindVertexBuffers(0, {*mShaderStorageBuffers[mFrameIndex]}, {0});
+	const PushConstants pc{
+		.deltaTime = deltaTime,
+		.time = time,
+		.aspect = WIDTH / static_cast<float>(HEIGHT),
+		.count = PARTICLE_COUNT
+	};
+
+	(*commandBuffer).pushConstants(
+		mGraphicsPipeline.layout(),
+		vk::ShaderStageFlagBits::eVertex,
+		0,
+		vk::ArrayProxy<const PushConstants>(pc));
 	(*commandBuffer).draw(PARTICLE_COUNT, 1, 0, 0);
 	(*commandBuffer).endRendering();
 	// After rendering, transition the swapchain image to PRESENT_SRC
@@ -440,7 +458,7 @@ void Device::recordGraphicsCommandBuffer(const uint32_t imageIndex) {
 	(*commandBuffer).end();
 }
 
-void Device::recordComputeCommandBuffer(const float deltaTime) {
+void Device::recordComputeCommandBuffer(const float deltaTime, const float time) {
 	const auto& commandBuffer = mComputeCommandBuffers[mFrameIndex];
 	(*commandBuffer).reset();
 	(*commandBuffer).begin({});
@@ -451,15 +469,18 @@ void Device::recordComputeCommandBuffer(const float deltaTime) {
 		0,
 		{mComputeDescriptorSets[mFrameIndex]}, {});
 
-	const ComputePushConstants pc{
+	const PushConstants pc{
 		.deltaTime = deltaTime,
+		.time = time,
+		.aspect = WIDTH / static_cast<float>(HEIGHT),
+		.count = PARTICLE_COUNT
 	};
 
 	(*commandBuffer).pushConstants(
 		mComputePipeline.layout(),
 		vk::ShaderStageFlagBits::eCompute,
 		0,
-		vk::ArrayProxy<const ComputePushConstants>(pc));
+		vk::ArrayProxy<const PushConstants>(pc));
 	(*commandBuffer).dispatch((PARTICLE_COUNT + THREADS_PER_GROUP - 1) / THREADS_PER_GROUP, 1, 1);
 	(*commandBuffer).end();
 }
